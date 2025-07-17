@@ -1,7 +1,9 @@
 // file Frontend/Components/WalletInfo.js
 import { useState, useEffect } from 'react'
-import { useBalance } from 'wagmi'
+import { useBalance, useAccount } from 'wagmi'
 import { formatEther } from 'viem'
+import { CopyToClipboard } from 'react-copy-to-clipboard'
+import { CheckIcon, DocumentDuplicateIcon } from '@heroicons/react/24/outline'
 
 export default function WalletInfo({ 
   contractAddress, 
@@ -10,6 +12,7 @@ export default function WalletInfo({
   transactionCount, 
   isSigner 
 }) {
+  const { address } = useAccount()
   const { data: balance } = useBalance({
     address: contractAddress,
     enabled: contractAddress !== '0x...',
@@ -23,6 +26,8 @@ export default function WalletInfo({
     userIsSigner: false,
   })
 
+  const [copiedAddress, setCopiedAddress] = useState(null)
+
   useEffect(() => {
     setStats({
       totalSigners: signers.length,
@@ -32,6 +37,15 @@ export default function WalletInfo({
       userIsSigner: isSigner,
     })
   }, [signers, requiredSignatures, transactionCount, balance, isSigner])
+
+  const handleCopy = (address) => {
+    setCopiedAddress(address)
+    setTimeout(() => setCopiedAddress(null), 2000)
+  }
+
+  const truncateAddress = (addr) => {
+    return `${addr.substring(0, 6)}...${addr.substring(addr.length - 4)}`
+  }
 
   const StatCard = ({ title, value, icon, color }) => (
     <div className={`bg-gradient-to-r ${color} rounded-lg p-6 text-white`}>
@@ -100,4 +114,78 @@ export default function WalletInfo({
           Authorized Signers ({signers.length})
         </h3>
         <div className="space-y-3">
-          {signers.map((signer, index
+          {signers.map((signer, index) => (
+            <div 
+              key={index} 
+              className={`flex items-center justify-between p-4 rounded-lg ${
+                signer.toLowerCase() === address?.toLowerCase() 
+                  ? 'bg-purple-500/20 border border-purple-500' 
+                  : 'bg-white/5'
+              }`}
+            >
+              <div className="flex items-center space-x-3">
+                <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
+                  signer.toLowerCase() === address?.toLowerCase() 
+                    ? 'bg-purple-500' 
+                    : 'bg-blue-500'
+                }`}>
+                  <span className="text-white text-sm font-medium">
+                    {index + 1}
+                  </span>
+                </div>
+                <span className="text-white font-mono">
+                  {truncateAddress(signer)}
+                </span>
+              </div>
+              
+              <div className="flex items-center space-x-2">
+                {signer.toLowerCase() === address?.toLowerCase() && (
+                  <span className="text-xs bg-purple-500 text-white px-2 py-1 rounded-full">
+                    You
+                  </span>
+                )}
+                
+                <CopyToClipboard text={signer} onCopy={() => handleCopy(signer)}>
+                  <button className="text-gray-400 hover:text-white transition-colors">
+                    {copiedAddress === signer ? (
+                      <CheckIcon className="h-5 w-5 text-green-500" />
+                    ) : (
+                      <DocumentDuplicateIcon className="h-5 w-5" />
+                    )}
+                  </button>
+                </CopyToClipboard>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Wallet Address Section */}
+      <div className="bg-white/5 rounded-lg p-6">
+        <h3 className="text-xl font-semibold text-white mb-4">
+          Wallet Contract
+        </h3>
+        <div className="flex items-center justify-between bg-white/10 p-4 rounded-lg">
+          <span className="font-mono text-gray-300">
+            {truncateAddress(contractAddress)}
+          </span>
+          <CopyToClipboard text={contractAddress} onCopy={() => handleCopy(contractAddress)}>
+            <button className="flex items-center space-x-1 text-gray-400 hover:text-white transition-colors">
+              {copiedAddress === contractAddress ? (
+                <>
+                  <CheckIcon className="h-4 w-4 text-green-500" />
+                  <span className="text-sm">Copied!</span>
+                </>
+              ) : (
+                <>
+                  <DocumentDuplicateIcon className="h-4 w-4" />
+                  <span className="text-sm">Copy</span>
+                </>
+              )}
+            </button>
+          </CopyToClipboard>
+        </div>
+      </div>
+    </div>
+  )
+}

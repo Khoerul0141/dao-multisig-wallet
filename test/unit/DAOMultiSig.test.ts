@@ -1,8 +1,8 @@
 // file test/unit/DAOMultiSig.test.ts
 import { expect } from "chai";
 import { ethers } from "hardhat";
-import { DAOMultiSigWallet } from "../../typechain-types";
-import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
+import { DAOMultiSigWallet } from "../typechain-types";
+import { SignerWithAddress } from "@nomicfoundation/hardhat-ethers/signers";
 
 describe("DAOMultiSigWallet", function () {
     let wallet: DAOMultiSigWallet;

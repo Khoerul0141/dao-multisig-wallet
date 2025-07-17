@@ -6,11 +6,12 @@ import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 import "@openzeppelin/contracts/utils/cryptography/EIP712.sol";
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
+import "./GasOptimizer.sol";
 
 /**
  * @title DAOMultiSigWallet
  * @dev Multi-signature wallet dengan fitur DAO governance dan optimisasi gas
- * @author Your Name
+ * @author khoerul
  */
 contract DAOMultiSigWallet is EIP712, ReentrancyGuard, Ownable {
     using ECDSA for bytes32;
