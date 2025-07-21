@@ -2,13 +2,33 @@
   "compilerOptions": {
     "target": "es2020",
     "module": "commonjs",
-    "esModuleInterop": true,
-    "forceConsistentCasingInFileNames": true,
+    "lib": ["es2020"],
+    "outDir": "./dist",
+    "rootDir": "./",
     "strict": true,
+    "esModuleInterop": true,
     "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true,
     "resolveJsonModule": true,
-    "moduleResolution": "node"
-  },  
-  "include": ["./scripts", "./test", "./typechain-types"],
-  "exclude": ["node_modules"]
+    "declaration": true,
+    "declarationMap": true,
+    "sourceMap": true,
+    "types": ["hardhat"]
+  },
+  "include": [
+    "./test/**/*.ts",
+    "./scripts/*.js",
+    "./typechain-types/**/*.ts",
+    "./hardhat.config.js"
+  ],
+  "exclude": [
+    "node_modules",
+    "dist",
+    "cache",
+    "artifacts"
+  ],
+  "ts-node": {
+    "esm": false,
+    "experimentalSpecifierResolution": "node"
+  }
 }

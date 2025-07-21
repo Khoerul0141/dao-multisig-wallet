@@ -1,6 +1,6 @@
 // file test/integration/Fork.test.ts
 import { expect } from "chai";
-import { ethers } from "hardhat";
+import { ethers } from "ethers";
 import { DAOMultiSigWallet } from "../../typechain-types";
 import { SignerWithAddress } from "@nomicfoundation/hardhat-ethers/signers";
 
