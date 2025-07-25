@@ -1,0 +1,25 @@
+{
+  "network": "localhost",
+  "deployedAt": "2025-07-24T21:49:12.490Z",
+  "deployer": "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266",
+  "contracts": {
+    "GasOptimizer": {
+      "address": "0x564Db7a11653228164FD03BcA60465270E67b3d7",
+      "txHash": "0x707bfee4120b502a6087a84d3d6743a4da247eab76c0cb2ae97399098bb95892"
+    },
+    "DAOMultiSigWallet": {
+      "address": "0x9abb5861e3a1eDF19C51F8Ac74A81782e94F8FdC",
+      "txHash": "0x2495dbd0c0d567994c967d38e5ea3ab131e110f05bd9ef1b00f310742b5338db",
+      "initialSigners": [
+        "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266",
+        "0x70997970C51812dc3A010C7d01b50e0d17dc79C8",
+        "0x3C44CdDdB6a900fa2b585dd299e03d12FA4293BC"
+      ],
+      "requiredSignatures": 2
+    }
+  },
+  "gasUsed": {
+    "gasOptimizer": "66016",
+    "daoWallet": "2953818"
+  }
+}

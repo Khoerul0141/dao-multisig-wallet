@@ -84,7 +84,7 @@ library GasOptimizer {
         bytes memory data
     ) 
         internal 
-        pure 
+        view
         returns (uint256) 
     {
         uint256 gasEstimate = BASE_GAS;
@@ -522,17 +522,14 @@ library GasOptimizer {
     )
         internal
         pure
-        returns (uint256)
+        returns (uint256 result)
     {
         if (denominator == 0) {
             revert DivisionByZero();
         }
         
-        // Use assembly for gas optimization
-        assembly {
-            let result := div(mul(numerator, exp(10, precision)), denominator)
-            return(0, 0)
-        }
+        // Fixed the assembly block
+        result = (numerator * (10 ** precision)) / denominator;
     }
     
     /**
@@ -576,7 +573,7 @@ library GasOptimizer {
     }
     
     /**
-     * @dev Efficient hash calculation for arrays
+     * @dev Efficient hash calculation for arrays - FIXED VERSION
      */
     function efficientHash(
         address[] memory addresses,
@@ -590,17 +587,11 @@ library GasOptimizer {
             revert ArrayLengthMismatch();
         }
         
-        bytes32 hash;
-        assembly {
-            let length := mload(addresses)
-            hash := keccak256(add(addresses, 0x20), mul(length, 0x20))
-            
-            let valuesHash := keccak256(add(values, 0x20), mul(length, 0x20))
-            hash := keccak256(abi_encode(hash, valuesHash), 0x40)
-        }
-        hash = keccak256(abi.encode(hash, valuesHash));
-
-        return hash;
+        // Fixed implementation using abi.encodePacked outside assembly
+        return keccak256(abi.encodePacked(
+            keccak256(abi.encodePacked(addresses)),
+            keccak256(abi.encodePacked(values))
+        ));
     }
     
     /**

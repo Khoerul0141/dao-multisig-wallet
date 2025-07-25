@@ -8,8 +8,8 @@ const PRIVATE_KEY = process.env.PRIVATE_KEY;
 /** @type import('hardhat/config').HardhatUserConfig */
 module.exports = {
   typechain: {
-  outDir: "typechain-types",
-  target: "ethers-v6",
+    outDir: "typechain-types",
+    target: "ethers-v6",
   },
   solidity: {
     version: "0.8.20",
@@ -19,6 +19,15 @@ module.exports = {
         runs: 200,
       },
       viaIR: true,
+      // REMOVED: Library linking configuration that caused the error
+      metadata: {
+        bytecodeHash: "none"
+      },
+      outputSelection: {
+        "*": {
+          "*": ["*"]
+        }
+      }
     },
   },
   networks: {
@@ -31,21 +40,35 @@ module.exports = {
         count: 10,
         accountsBalance: "10000000000000000000000",
       },
+      gas: 12000000,
+      blockGasLimit: 12000000,
+      allowUnlimitedContractSize: true,
+      chainId: 31337,
+      loggingEnabled: true,
     },
     sepolia: {
       url: `https://eth-sepolia.g.alchemy.com/v2/${ALCHEMY_API_KEY}`,
       accounts: PRIVATE_KEY ? [PRIVATE_KEY] : [],
-      gas: 2100000,
+      gas: 6000000,
       gasPrice: 8000000000,
+      timeout: 100000,
     },
     localhost: {
       url: "http://127.0.0.1:8545",
+      gas: 12000000,
+      blockGasLimit: 12000000,
+      allowUnlimitedContractSize: true,
+      chainId: 31337,
+      timeout: 60000,
     },
   },
   gasReporter: {
     enabled: process.env.REPORT_GAS !== undefined,
     currency: "USD",
     coinmarketcap: process.env.COINMARKETCAP_API_KEY,
+    gasPrice: 20,
+    showTimeSpent: true,
+    showMethodSig: true,
   },
   etherscan: {
     apiKey: process.env.ETHERSCAN_API_KEY,

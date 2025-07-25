@@ -5,6 +5,8 @@ import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 import "@openzeppelin/contracts/utils/cryptography/EIP712.sol";
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
+
+// Import GasOptimizer library
 import "./GasOptimizer.sol";
 
 /**
@@ -14,7 +16,7 @@ import "./GasOptimizer.sol";
  */
 contract DAOMultiSigWallet is EIP712, ReentrancyGuard, Ownable {
     using ECDSA for bytes32;
-    using GasOptimizer for address[];
+    using GasOptimizer for address[]; // Use the library
 
     // Events
     event TransactionSubmitted(
@@ -135,7 +137,7 @@ contract DAOMultiSigWallet is EIP712, ReentrancyGuard, Ownable {
         Ownable()
         validRequirement(_signers.length, _required)
     {
-        // Validate unique signers using GasOptimizer
+        // Use library function to validate unique signers
         require(_signers.checkUniqueAddresses(), "Duplicate signers");
         
         for (uint256 i = 0; i < _signers.length; i++) {
@@ -193,7 +195,7 @@ contract DAOMultiSigWallet is EIP712, ReentrancyGuard, Ownable {
     }
 
     /**
-     * @dev Submit multiple transactions in batch (Gas optimized)
+     * @dev Submit multiple transactions in batch
      */
     function submitBatchTransactions(
         address[] calldata _targets,
@@ -209,8 +211,43 @@ contract DAOMultiSigWallet is EIP712, ReentrancyGuard, Ownable {
         txIds = new uint256[](_targets.length);
         
         for (uint256 i = 0; i < _targets.length; i++) {
-            txIds[i] = this.submitTransaction(_targets[i], _values[i], _data[i], _deadlines[i]);
+            txIds[i] = _submitSingleTransaction(_targets[i], _values[i], _data[i], _deadlines[i]);
         }
+    }
+
+    /**
+     * @dev Internal function for single transaction submission
+     */
+    function _submitSingleTransaction(
+        address _to,
+        uint256 _value,
+        bytes calldata _data,
+        uint256 _deadline
+    ) internal returns (uint256 txId) {
+        require(_to != address(0), "Invalid recipient");
+        require(_deadline > block.timestamp, "Invalid deadline");
+        
+        txId = transactionCount++;
+        
+        transactions[txId] = Transaction({
+            to: _to,
+            value: _value,
+            data: _data,
+            executed: false,
+            deadline: _deadline,
+            nonce: txId,
+            yesVotes: 0,
+            noVotes: 0,
+            submissionTime: block.timestamp
+        });
+
+        Proposal storage proposal = proposals[txId];
+        proposal.txId = txId;
+        proposal.startTime = block.timestamp;
+        proposal.endTime = block.timestamp + config.proposalDuration;
+        proposal.executed = false;
+
+        emit TransactionSubmitted(txId, msg.sender, _to, _value, _data);
     }
 
     /**
@@ -244,7 +281,7 @@ contract DAOMultiSigWallet is EIP712, ReentrancyGuard, Ownable {
     }
 
     /**
-     * @dev Batch vote on multiple transactions (Gas optimized)
+     * @dev Batch vote on multiple transactions
      */
     function batchVote(
         uint256[] calldata _txIds,
@@ -257,9 +294,31 @@ contract DAOMultiSigWallet is EIP712, ReentrancyGuard, Ownable {
             if (_txIds[i] < transactionCount && 
                 !transactions[_txIds[i]].executed &&
                 !proposals[_txIds[i]].hasVoted[msg.sender]) {
-                this.voteOnTransaction(_txIds[i], _supports[i]);
+                _voteInternal(_txIds[i], _supports[i]);
             }
         }
+    }
+
+    /**
+     * @dev Internal voting function
+     */
+    function _voteInternal(uint256 _txId, bool _support) internal {
+        Proposal storage proposal = proposals[_txId];
+        
+        if (block.timestamp < proposal.startTime || block.timestamp > proposal.endTime) {
+            return; // Skip invalid votes
+        }
+
+        proposal.hasVoted[msg.sender] = true;
+        proposal.votes[msg.sender] = _support;
+
+        if (_support) {
+            transactions[_txId].yesVotes++;
+        } else {
+            transactions[_txId].noVotes++;
+        }
+
+        emit TransactionVoted(_txId, msg.sender, _support);
     }
 
     /**
@@ -304,7 +363,7 @@ contract DAOMultiSigWallet is EIP712, ReentrancyGuard, Ownable {
     }
 
     /**
-     * @dev Batch execute multiple transactions (Gas optimized)
+     * @dev Batch execute multiple transactions
      */
     function batchExecuteTransactions(uint256[] calldata _txIds) 
         external 
@@ -317,22 +376,28 @@ contract DAOMultiSigWallet is EIP712, ReentrancyGuard, Ownable {
         
         for (uint256 i = 0; i < length; i++) {
             uint256 txId = _txIds[i];
-            if (txId < transactionCount && 
-                !transactions[txId].executed && 
-                transactions[txId].yesVotes >= config.requiredSignatures &&
-                block.timestamp > proposals[txId].endTime &&
-                block.timestamp <= transactions[txId].deadline &&
-                block.timestamp >= transactions[txId].submissionTime + executionDelay) {
+            if (_canExecuteTransaction(txId)) {
                 _executeTransaction(txId);
             }
         }
     }
 
     /**
+     * @dev Check if transaction can be executed
+     */
+    function _canExecuteTransaction(uint256 _txId) internal view returns (bool) {
+        return _txId < transactionCount && 
+               !transactions[_txId].executed && 
+               transactions[_txId].yesVotes >= config.requiredSignatures &&
+               block.timestamp > proposals[_txId].endTime &&
+               block.timestamp <= transactions[_txId].deadline &&
+               block.timestamp >= transactions[_txId].submissionTime + executionDelay;
+    }
+
+    /**
      * @dev Add a new signer (requires multisig approval)
      */
     function addSigner(address _signer) external {
-        // This should be called via multisig proposal
         require(_signer != address(0), "Invalid signer");
         require(!isSigner[_signer], "Already a signer");
         require(signers.length < MAX_SIGNERS, "Max signers reached");
@@ -344,17 +409,17 @@ contract DAOMultiSigWallet is EIP712, ReentrancyGuard, Ownable {
     }
 
     /**
-     * @dev Remove a signer (requires multisig approval)
+     * @dev Remove a signer (requires multisig approval) - Using library function
      */
     function removeSigner(address _signer) external {
-        // This should be called via multisig proposal
         require(isSigner[_signer], "Not a signer");
         require(signers.length > MIN_SIGNERS, "Cannot remove, minimum signers required");
         
         isSigner[_signer] = false;
         
-        // Use GasOptimizer for efficient removal
-        require(signers.efficientArrayRemoval(_signer), "Signer not found in array");
+        // Use library function for efficient array removal
+        bool found = GasOptimizer.efficientArrayRemoval(signers, _signer);
+        require(found, "Signer not found in array");
         
         // Adjust required signatures if needed
         if (config.requiredSignatures > signers.length) {
@@ -372,7 +437,6 @@ contract DAOMultiSigWallet is EIP712, ReentrancyGuard, Ownable {
         external 
         validRequirement(signers.length, _required) 
     {
-        // This should be called via multisig proposal
         uint256 oldRequired = config.requiredSignatures;
         config.requiredSignatures = uint128(_required);
         
@@ -386,7 +450,6 @@ contract DAOMultiSigWallet is EIP712, ReentrancyGuard, Ownable {
         external 
         validProposalDuration(_duration)
     {
-        // This should be called via multisig proposal
         uint256 oldDuration = config.proposalDuration;
         config.proposalDuration = uint128(_duration);
         
@@ -405,7 +468,6 @@ contract DAOMultiSigWallet is EIP712, ReentrancyGuard, Ownable {
      * @dev Change execution delay
      */
     function changeExecutionDelay(uint256 _delay) external {
-        // This should be called via multisig proposal
         require(_delay <= 7 days, "Delay too long");
         executionDelay = _delay;
     }
@@ -508,11 +570,14 @@ contract DAOMultiSigWallet is EIP712, ReentrancyGuard, Ownable {
                         proposal.endTime - block.timestamp : 0;
     }
 
-    // Estimate gas for transaction execution
+    /**
+     * @dev Estimate gas for transaction execution - Using library
+     */
     function estimateExecutionGas(uint256 _txId) external view returns (uint256) {
         require(_txId < transactionCount, "Transaction does not exist");
         Transaction storage transaction = transactions[_txId];
         
+        // Use library function for gas estimation
         return GasOptimizer.estimateGas(
             transaction.to,
             transaction.value,
@@ -520,8 +585,11 @@ contract DAOMultiSigWallet is EIP712, ReentrancyGuard, Ownable {
         );
     }
 
-    // Get batch transaction gas estimate
+    /**
+     * @dev Get batch transaction gas estimate - Using library
+     */
     function estimateBatchExecutionGas(uint256[] calldata _txIds) external view returns (uint256) {
+        // Convert to batch transaction format for library
         GasOptimizer.BatchTransaction[] memory batchTxs = new GasOptimizer.BatchTransaction[](_txIds.length);
         
         for (uint256 i = 0; i < _txIds.length; i++) {
