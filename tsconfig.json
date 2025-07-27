@@ -1,34 +1,69 @@
 {
   "compilerOptions": {
-    "target": "es2020",
-    "module": "commonjs",
-    "lib": ["es2020"],
-    "outDir": "./dist",
-    "rootDir": "./",
-    "strict": true,
-    "esModuleInterop": true,
+    "target": "ES2022",
+    "lib": ["ES2022"],
+    "allowJs": true,
     "skipLibCheck": true,
+    "strict": true,
     "forceConsistentCasingInFileNames": true,
+    "noEmit": true,
+    "esModuleInterop": true,
+    "module": "esnext",
+    "moduleResolution": "node",
     "resolveJsonModule": true,
-    "declaration": true,
-    "declarationMap": true,
-    "sourceMap": true,
-    "types": ["hardhat"]
+    "isolatedModules": true,
+    "jsx": "preserve",
+    "incremental": true,
+    "plugins": [
+      {
+        "name": "next"
+      }
+    ],
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["./*"],
+      "@/components/*": ["./frontend/components/*"],
+      "@/pages/*": ["./frontend/pages/*"],
+      "@/styles/*": ["./frontend/styles/*"],
+      "@/utils/*": ["./frontend/utils/*"],
+      "@/hooks/*": ["./frontend/hooks/*"],
+      "@/types/*": ["./frontend/types/*"],
+      "@/contracts/*": ["./contracts/*"],
+      "@/typechain-types/*": ["./typechain-types/*"]
+    },
+    "types": [
+      "hardhat",
+      "node",
+      "@nomicfoundation/hardhat-toolbox"
+    ],
+    "typeRoots": [
+      "./node_modules/@types",
+      "./typechain-types"
+    ]
   },
   "include": [
-    "./test/**/*.ts",
-    "./scripts/*.js",
-    "./typechain-types/**/*.ts",
-    "./hardhat.config.js"
+    "next-env.d.ts",
+    "**/*.ts",
+    "**/*.tsx",
+    ".next/types/**/*.ts",
+    "./test/**/*",
+    "./scripts/**/*",
+    "./typechain-types/**/*",
+    "./hardhat.config.js",
+    "./frontend/**/*"
   ],
   "exclude": [
     "node_modules",
+    ".next",
+    "out",
     "dist",
+    "build",
     "cache",
-    "artifacts"
+    "artifacts",
+    "coverage"
   ],
   "ts-node": {
-    "esm": false,
+    "esm": true,
     "experimentalSpecifierResolution": "node"
   }
 }
