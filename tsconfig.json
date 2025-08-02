@@ -34,7 +34,8 @@
     "types": [
       "hardhat",
       "node",
-      "@nomicfoundation/hardhat-toolbox"
+      "@nomicfoundation/hardhat-toolbox",
+      "@nomicfoundation/hardhat-network-helpers"
     ],
     "typeRoots": [
       "./node_modules/@types",
@@ -60,7 +61,8 @@
     "build",
     "cache",
     "artifacts",
-    "coverage"
+    "coverage",
+    "test/unit/tempCodeRunnerFile.ts"
   ],
   "ts-node": {
     "esm": true,

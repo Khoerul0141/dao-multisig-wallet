@@ -10,7 +10,10 @@ export default function WalletInfo({
   signers, 
   requiredSignatures, 
   transactionCount, 
-  isSigner 
+  isSigner,
+  isPaused, 
+  proposalDuration, 
+  executionDelay 
 }) {
   const { address } = useAccount()
   const { data: balance } = useBalance({
