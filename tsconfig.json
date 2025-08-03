@@ -34,6 +34,8 @@
     "types": [
       "hardhat",
       "node",
+      "mocha",
+      "chai",
       "@nomicfoundation/hardhat-toolbox",
       "@nomicfoundation/hardhat-network-helpers"
     ],

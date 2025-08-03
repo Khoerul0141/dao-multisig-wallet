@@ -1,5 +1,6 @@
 require("@nomicfoundation/hardhat-toolbox");
 require("@typechain/hardhat");
+require("@typechain/ethers-v6");
 require("dotenv").config();
 
 const ALCHEMY_API_KEY = process.env.ALCHEMY_API_KEY;
@@ -7,10 +8,6 @@ const PRIVATE_KEY = process.env.PRIVATE_KEY;
 
 /** @type import('hardhat/config').HardhatUserConfig */
 module.exports = {
-  typechain: {
-    outDir: "typechain-types",
-    target: "ethers-v6",
-  },
   solidity: {
     version: "0.8.20",
     settings: {
@@ -29,6 +26,13 @@ module.exports = {
         }
       }
     },
+  },
+  typechain: {
+    outDir: "typechain-types",
+    target: "ethers-v6",
+    alwaysGenerateOverloads: false,
+    discriminateTypes: false,
+    tsNoCheck: false,
   },
   networks: {
     hardhat: {
