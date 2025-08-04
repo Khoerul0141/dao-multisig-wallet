@@ -14,11 +14,11 @@ import type {
   ContractDeployTransaction,
   ContractRunner,
 } from "ethers";
-import type { NonPayableOverrides } from "../common";
+import type { NonPayableOverrides } from "../../../common";
 import type {
   DAOMultiSigWallet,
   DAOMultiSigWalletInterface,
-} from "../DAOMultiSigWallet";
+} from "../../../contracts/DAOMultiSigWallet.sol/DAOMultiSigWallet";
 
 const _abi = [
   {

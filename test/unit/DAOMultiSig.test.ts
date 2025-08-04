@@ -24,8 +24,11 @@ describe("DAOMultiSigWallet", function () {
 
         // Deploy GasOptimizer library first
         const GasOptimizerFactory = await ethers.getContractFactory("GasOptimizer");
-        gasOptimizer = await GasOptimizerFactory.deploy();
-        await gasOptimizer.waitForDeployment();
+        const gasOptimizerDeployment = await GasOptimizerFactory.deploy();
+        await gasOptimizerDeployment.waitForDeployment();
+        
+        // Type assertion to fix the typing issue
+        gasOptimizer = gasOptimizerDeployment as unknown as GasOptimizer;
 
         // Get the library address
         const gasOptimizerAddress = await gasOptimizer.getAddress();
@@ -55,14 +58,17 @@ describe("DAOMultiSigWallet", function () {
             }
         }
         
-        wallet = await DAOMultiSigWallet.deploy(
+        const walletDeployment = await DAOMultiSigWallet.deploy(
             [signer1.address, signer2.address, signer3.address],
             REQUIRED_SIGNATURES,
             WALLET_NAME,
             WALLET_VERSION
         );
 
-        await wallet.waitForDeployment();
+        await walletDeployment.waitForDeployment();
+        
+        // Type assertion to fix the typing issue
+        wallet = walletDeployment as unknown as DAOMultiSigWallet;
 
         // Fund the wallet
         await signer1.sendTransaction({

@@ -14,7 +14,7 @@ import type {
   TypedDeferredTopicFilter,
   TypedEventLog,
   TypedListener,
-} from "./common";
+} from "../../common";
 
 export interface GasOptimizerInterface extends Interface {}
 

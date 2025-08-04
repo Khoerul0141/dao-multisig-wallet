@@ -8,8 +8,8 @@ import {
   Interface,
 } from "ethers";
 import type { Signer, ContractDeployTransaction, ContractRunner } from "ethers";
-import type { NonPayableOverrides } from "../common";
-import type { GasOptimizer, GasOptimizerInterface } from "../GasOptimizer";
+import type { NonPayableOverrides } from "../../../common";
+import type { GasOptimizer, GasOptimizerInterface } from "../../../contracts/GasOptimizer.sol/GasOptimizer";
 
 const _abi = [
   {
