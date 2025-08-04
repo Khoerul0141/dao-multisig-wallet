@@ -1,8 +1,8 @@
 // file test/unit/DAOMultiSig.test.ts
 import { expect } from "chai";
 import { ethers } from "hardhat";
-import { DAOMultiSigWallet, GasOptimizer } from "../../typechain-types";
-import { SignerWithAddress } from "@nomicfoundation/hardhat-ethers/signers";
+import type { DAOMultiSigWallet, GasOptimizer } from "../../typechain-types";
+import type { SignerWithAddress } from "@nomicfoundation/hardhat-ethers/signers";
 import { time } from "@nomicfoundation/hardhat-network-helpers";
 
 describe("DAOMultiSigWallet", function () {
@@ -30,7 +30,7 @@ describe("DAOMultiSigWallet", function () {
         // Get the library address
         const gasOptimizerAddress = await gasOptimizer.getAddress();
 
-        // Deploy DAOMultiSigWallet with proper library linking
+        // Deploy DAOMultiSigWallet with library linking fallback
         let DAOMultiSigWallet;
         
         try {
@@ -45,12 +45,12 @@ describe("DAOMultiSigWallet", function () {
                 // Fallback to simple library name
                 DAOMultiSigWallet = await ethers.getContractFactory("DAOMultiSigWallet", {
                     libraries: {
-                        GasOptimizer: gasOptimizerAddress
+                        "GasOptimizer": gasOptimizerAddress
                     }
                 });
             } catch (error2) {
                 // If library linking fails, deploy without it
-                console.log("Warning: Deploying without library linking");
+                console.log("Warning: Deploying without library linking for testing");
                 DAOMultiSigWallet = await ethers.getContractFactory("DAOMultiSigWallet");
             }
         }
@@ -193,8 +193,8 @@ describe("DAOMultiSigWallet", function () {
         });
 
         it("Should handle transaction submission while paused", async function () {
-            // Pause the wallet
-            await wallet.togglePause();
+            // Pause the wallet (only owner can do this)
+            await wallet.connect(owner).togglePause();
             
             const deadline = Math.floor(Date.now() / 1000) + 86400;
             
@@ -275,8 +275,8 @@ describe("DAOMultiSigWallet", function () {
         });
 
         it("Should handle voting when paused", async function () {
-            // Pause the wallet
-            await wallet.togglePause();
+            // Pause the wallet (only owner can do this)
+            await wallet.connect(owner).togglePause();
             
             await expect(
                 wallet.connect(signer1).voteOnTransaction(txId, true)
@@ -379,7 +379,7 @@ describe("DAOMultiSigWallet", function () {
             await time.increase(7 * 24 * 60 * 60 + 24 * 60 * 60 + 1);
             
             // Pause the wallet
-            await wallet.togglePause();
+            await wallet.connect(owner).togglePause();
             
             await expect(
                 wallet.connect(signer1).executeTransaction(txId)
@@ -463,7 +463,7 @@ describe("DAOMultiSigWallet", function () {
 
     describe("Emergency Functions", function () {
         it("Should allow owner to pause/unpause contract", async function () {
-            await wallet.togglePause();
+            await wallet.connect(owner).togglePause();
             expect(await wallet.isPaused()).to.be.true;
 
             // Should reject operations when paused
@@ -478,7 +478,7 @@ describe("DAOMultiSigWallet", function () {
             ).to.be.revertedWith("Contract is paused");
 
             // Unpause
-            await wallet.togglePause();
+            await wallet.connect(owner).togglePause();
             expect(await wallet.isPaused()).to.be.false;
         });
 

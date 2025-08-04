@@ -1,8 +1,8 @@
 // file test/integration/Fork.test.ts
 import { expect } from "chai";
 import { ethers } from "hardhat";
-import { DAOMultiSigWallet, GasOptimizer } from "../../typechain-types";
-import { SignerWithAddress } from "@nomicfoundation/hardhat-ethers/signers";
+import type { DAOMultiSigWallet, GasOptimizer } from "../../typechain-types";
+import type { SignerWithAddress } from "@nomicfoundation/hardhat-ethers/signers";
 import { time } from "@nomicfoundation/hardhat-network-helpers";
 
 describe("Fork Integration Tests", function () {
@@ -36,11 +36,12 @@ describe("Fork Integration Tests", function () {
         gasOptimizer = await GasOptimizerFactory.deploy();
         await gasOptimizer.waitForDeployment();
 
-        // Deploy wallet with library linking
+        // Deploy wallet with library linking fallback
         let DAOMultiSigWallet;
         const gasOptimizerAddress = await gasOptimizer.getAddress();
         
         try {
+            // Try with full library path
             DAOMultiSigWallet = await ethers.getContractFactory("DAOMultiSigWallet", {
                 libraries: {
                     "contracts/GasOptimizer.sol:GasOptimizer": gasOptimizerAddress
@@ -48,9 +49,10 @@ describe("Fork Integration Tests", function () {
             });
         } catch (error) {
             try {
+                // Fallback to simple library name
                 DAOMultiSigWallet = await ethers.getContractFactory("DAOMultiSigWallet", {
                     libraries: {
-                        GasOptimizer: gasOptimizerAddress
+                        "GasOptimizer": gasOptimizerAddress
                     }
                 });
             } catch (error2) {
@@ -102,7 +104,7 @@ describe("Fork Integration Tests", function () {
         });
 
         it("Should interact with real DeFi protocols", async function () {
-            // Example: Interacting with USDC contract (use a mock for testing)
+            // Example: Mock ERC20 interaction
             const mockERC20Address = "0xA0b86a33E6441D0CcF1b6bb57b39B2c2b1243C5F";
             
             // Create a simple transfer call data
@@ -160,7 +162,7 @@ describe("Fork Integration Tests", function () {
             console.log("Batch execution gas used:", receipt?.gasUsed.toString());
             
             // Should be more efficient than individual executions
-            expect(receipt?.gasUsed).to.be.lessThan(ethers.parseUnits("2000000", "wei"));
+            expect(receipt?.gasUsed).to.be.lessThan(2000000n);
         });
     });
 
@@ -169,13 +171,16 @@ describe("Fork Integration Tests", function () {
             const maxSigners = 10; // Reduced for testing
             const signerAddresses = [];
             
-            // Create max number of signers
-            for (let i = 0; i < maxSigners; i++) {
-                signerAddresses.push(signers[i % signers.length].address);
+            // Create max number of signers (use different signers to avoid duplicates)
+            for (let i = 0; i < maxSigners && i < signers.length; i++) {
+                signerAddresses.push(signers[i].address);
             }
 
-            // Remove duplicates
-            const uniqueSigners = [...new Set(signerAddresses)];
+            // If we don't have enough signers, pad with unique addresses
+            while (signerAddresses.length < maxSigners) {
+                const wallet = ethers.Wallet.createRandom();
+                signerAddresses.push(wallet.address);
+            }
             
             let DAOMultiSigWallet;
             try {
@@ -189,8 +194,8 @@ describe("Fork Integration Tests", function () {
             }
 
             const maxWallet = await DAOMultiSigWallet.deploy(
-                uniqueSigners,
-                Math.min(uniqueSigners.length - 1, 5), // Reasonable requirement
+                signerAddresses,
+                Math.min(signerAddresses.length - 1, 5), // Reasonable requirement
                 "Max Signers Wallet",
                 "1.0.0"
             );
@@ -198,7 +203,7 @@ describe("Fork Integration Tests", function () {
             await maxWallet.waitForDeployment();
             
             const actualSigners = await maxWallet.getSigners();
-            expect(actualSigners.length).to.equal(uniqueSigners.length);
+            expect(actualSigners.length).to.equal(signerAddresses.length);
         });
 
         it("Should handle concurrent voting scenarios", async function () {
@@ -259,9 +264,11 @@ describe("Fork Integration Tests", function () {
             );
 
             // Even with knowledge of pending votes, non-signers can't interfere
-            await expect(
-                wallet.connect(signers[9]).voteOnTransaction(0, true)
-            ).to.be.revertedWith("Not a signer");
+            if (signers.length > 9) {
+                await expect(
+                    wallet.connect(signers[9]).voteOnTransaction(0, true)
+                ).to.be.revertedWith("Not a signer");
+            }
         });
 
         it("Should handle gas griefing attempts", async function () {
@@ -283,14 +290,13 @@ describe("Fork Integration Tests", function () {
             const receipt = await tx.wait();
             
             // Should not exceed reasonable gas limit
-            expect(receipt?.gasUsed).to.be.lessThan(ethers.parseUnits("500000", "wei"));
+            expect(receipt?.gasUsed).to.be.lessThan(500000n);
         });
     });
 
     describe("Recovery Scenarios", function () {
         it("Should handle signer key compromise", async function () {
             const compromisedSigner = signers[2];
-            const newSigner = signers[3]; // Use available signer
             
             // Remove compromised signer (this would be done through governance)
             const removeData = wallet.interface.encodeFunctionData("removeSigner", [compromisedSigner.address]);
@@ -453,8 +459,8 @@ describe("Fork Integration Tests", function () {
             console.log(`Execution gas: ${executeReceipt?.gasUsed.toString()}`);
             
             // Should be under reasonable gas limits
-            expect(singleReceipt?.gasUsed).to.be.lessThan(ethers.parseUnits("300000", "wei"));
-            expect(executeReceipt?.gasUsed).to.be.lessThan(ethers.parseUnits("150000", "wei"));
+            expect(singleReceipt?.gasUsed).to.be.lessThan(300000n);
+            expect(executeReceipt?.gasUsed).to.be.lessThan(150000n);
         });
 
         it("Should test gas optimization features", async function () {
@@ -497,7 +503,8 @@ describe("Fork Integration Tests", function () {
 
         it("Should handle realistic gas prices", async function () {
             // Get current gas price
-            const gasPrice = await ethers.provider.getGasPrice();
+            const feeData = await ethers.provider.getFeeData();
+            const gasPrice = feeData.gasPrice || 0n;
             console.log("Current gas price:", ethers.formatUnits(gasPrice, "gwei"), "gwei");
             
             // Should be reasonable for mainnet

@@ -16,7 +16,6 @@ module.exports = {
         runs: 200,
       },
       viaIR: true,
-      // REMOVED: Library linking configuration that caused the error
       metadata: {
         bytecodeHash: "none"
       },
@@ -36,10 +35,10 @@ module.exports = {
   },
   networks: {
     hardhat: {
-      forking: {
+      forking: ALCHEMY_API_KEY ? {
         url: `https://eth-mainnet.g.alchemy.com/v2/${ALCHEMY_API_KEY}`,
         blockNumber: 18900000,
-      },
+      } : undefined,
       accounts: {
         count: 10,
         accountsBalance: "10000000000000000000000",
