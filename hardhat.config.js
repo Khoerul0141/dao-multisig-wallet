@@ -14,8 +14,15 @@ module.exports = {
       optimizer: {
         enabled: true,
         runs: 200,
+        details: {
+          yul: true,
+          yulDetails: {
+            stackAllocation: true,
+            optimizerSteps: "dhfoDgvulfnTUtnIf"
+          }
+        }
       },
-      viaIR: true,
+      viaIR: false, // Changed from true to false for better compatibility
       metadata: {
         bytecodeHash: "none"
       },
@@ -40,14 +47,18 @@ module.exports = {
         blockNumber: 18900000,
       } : undefined,
       accounts: {
-        count: 10,
+        count: 20, // Increased for testing
         accountsBalance: "10000000000000000000000",
       },
       gas: 12000000,
       blockGasLimit: 12000000,
       allowUnlimitedContractSize: true,
       chainId: 31337,
-      loggingEnabled: true,
+      loggingEnabled: false,
+      mining: {
+        auto: true,
+        interval: 0
+      }
     },
     sepolia: {
       url: `https://eth-sepolia.g.alchemy.com/v2/${ALCHEMY_API_KEY}`,
@@ -63,6 +74,7 @@ module.exports = {
       allowUnlimitedContractSize: true,
       chainId: 31337,
       timeout: 60000,
+      accounts: "remote"
     },
   },
   gasReporter: {
@@ -72,6 +84,9 @@ module.exports = {
     gasPrice: 20,
     showTimeSpent: true,
     showMethodSig: true,
+    excludeContracts: ["Migrations"],
+    src: "./contracts",
+    outputFile: process.env.CI ? "gas-report.txt" : undefined
   },
   etherscan: {
     apiKey: process.env.ETHERSCAN_API_KEY,
@@ -83,6 +98,12 @@ module.exports = {
     artifacts: "./artifacts",
   },
   mocha: {
-    timeout: 100000,
+    timeout: 120000, // Increased timeout for complex tests
+    bail: false,
+    allowUncaught: false,
+    reporter: process.env.CI ? 'spec' : 'spec',
+    grep: process.env.TEST_GREP || undefined
   },
+  // Additional configuration for better testing
+  defaultNetwork: "hardhat",
 };

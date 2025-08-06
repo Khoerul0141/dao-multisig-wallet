@@ -1,4 +1,4 @@
-// file test/integration/Fork.test.ts - FIXED VERSION
+// test/integration/Fork.test.ts - FIXED VERSION
 import { expect } from "chai";
 import { ethers } from "hardhat";
 import type { DAOMultiSigWallet, GasOptimizer } from "../../typechain-types";
@@ -33,11 +33,8 @@ describe("Fork Integration Tests", function () {
 
         // Deploy library first
         const GasOptimizerFactory = await ethers.getContractFactory("GasOptimizer");
-        const gasOptimizerDeployment = await GasOptimizerFactory.deploy();
-        await gasOptimizerDeployment.waitForDeployment();
-        
-        // Type assertion to fix the typing issue
-        gasOptimizer = gasOptimizerDeployment as unknown as GasOptimizer;
+        gasOptimizer = await GasOptimizerFactory.deploy();
+        await gasOptimizer.waitForDeployment();
 
         // Deploy wallet with library linking fallback
         let DAOMultiSigWallet;
@@ -64,17 +61,14 @@ describe("Fork Integration Tests", function () {
             }
         }
 
-        const walletDeployment = await DAOMultiSigWallet.deploy(
+        wallet = await DAOMultiSigWallet.deploy(
             [signers[0].address, signers[1].address, signers[2].address],
             2,
             "DAO MultiSig Wallet",
             "1.0.0"
         );
 
-        await walletDeployment.waitForDeployment();
-        
-        // Type assertion to fix the typing issue
-        wallet = walletDeployment as unknown as DAOMultiSigWallet;
+        await wallet.waitForDeployment();
 
         // Fund the wallet
         await signers[0].sendTransaction({
@@ -199,17 +193,14 @@ describe("Fork Integration Tests", function () {
                 DAOMultiSigWallet = await ethers.getContractFactory("DAOMultiSigWallet");
             }
 
-            const maxWalletDeployment = await DAOMultiSigWallet.deploy(
+            const maxWallet = await DAOMultiSigWallet.deploy(
                 signerAddresses,
                 Math.min(signerAddresses.length - 1, 5), // Reasonable requirement
                 "Max Signers Wallet",
                 "1.0.0"
             );
 
-            await maxWalletDeployment.waitForDeployment();
-            
-            // Type assertion for the maxWallet
-            const maxWallet = maxWalletDeployment as unknown as DAOMultiSigWallet;
+            await maxWallet.waitForDeployment();
             
             const actualSigners = await maxWallet.getSigners();
             expect(actualSigners.length).to.equal(signerAddresses.length);
