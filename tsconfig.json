@@ -2,24 +2,20 @@
   "$schema": "https://raw.githubusercontent.com/SchemaStore/schemastore/master/src/schemas/json/tsconfig.json",
   "compilerOptions": {
     "target": "ES2022",
-    "lib": ["ES2022"],
+    "lib": ["ES2022" , "DOM"],
     "allowJs": true,
     "skipLibCheck": true,
     "strict": true,
     "forceConsistentCasingInFileNames": true,
     "noEmit": true,
     "esModuleInterop": true,
-    "module": "esnext",
-    "moduleResolution": "node",
+    "module": "ESnext",
+    "moduleResolution": "bundler",
     "resolveJsonModule": true,
     "isolatedModules": true,
     "jsx": "preserve",
     "incremental": true,
-    "plugins": [
-      {
-        "name": "next"
-      }
-    ],
+    "plugins": [{"name": "next"}],
     "baseUrl": ".",
     "paths": {
       "@/*": ["./*"],
@@ -48,11 +44,11 @@
     "**/*.ts",
     "**/*.tsx",
     ".next/types/**/*.ts",
-    "./test/**/*",
-    "./scripts/**/*",
-    "./typechain-types/**/*",
-    "./hardhat.config.js",
-    "./frontend/**/*"
+    "test/**/*",
+    "scripts/**/*",
+    "typechain-types/**/*",
+    "hardhat.config.js",
+    "frontend/**/*"
   ],
   "exclude": [
     "node_modules",

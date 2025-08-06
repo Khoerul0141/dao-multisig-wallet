@@ -1,4 +1,4 @@
-// file frontend/pages/_app.js
+// FIXED VERSION - Compatible with Wagmi v2
 import '../styles/globals.css'
 import '@rainbow-me/rainbowkit/styles.css'
 import {
@@ -6,54 +6,41 @@ import {
   RainbowKitProvider,
   darkTheme,
 } from '@rainbow-me/rainbowkit'
-import { configureChains, createConfig, WagmiConfig } from 'wagmi'
-import {
-  mainnet,
-  sepolia,
-  hardhat,
-  localhost,
-} from 'wagmi/chains'
-import { alchemyProvider } from 'wagmi/providers/alchemy'
-import { publicProvider } from 'wagmi/providers/public'
+import { WagmiProvider } from 'wagmi'
+import { mainnet, sepolia, hardhat, localhost } from 'wagmi/chains'
+import { http } from 'viem'
+import { createConfig } from 'wagmi'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 
-// Configure chains
-const { chains, publicClient, webSocketPublicClient } = configureChains(
-  [
-    mainnet,
-    sepolia,
-    hardhat,
-    localhost,
-  ],
-  [
-    alchemyProvider({ 
-      apiKey: process.env.NEXT_PUBLIC_ALCHEMY_API_KEY || 'demo' 
-    }),
-    publicProvider(),
-  ]
-)
+// Configure chains with Wagmi v2 syntax
+const config = createConfig({
+  chains: [mainnet, sepolia, hardhat, localhost],
+  transports: {
+    [mainnet.id]: http(process.env.NEXT_PUBLIC_ALCHEMY_API_KEY 
+      ? `https://eth-mainnet.g.alchemy.com/v2/${process.env.NEXT_PUBLIC_ALCHEMY_API_KEY}`
+      : undefined
+    ),
+    [sepolia.id]: http(process.env.NEXT_PUBLIC_ALCHEMY_API_KEY
+      ? `https://eth-sepolia.g.alchemy.com/v2/${process.env.NEXT_PUBLIC_ALCHEMY_API_KEY}`
+      : undefined
+    ),
+    [hardhat.id]: http('http://127.0.0.1:8545'),
+    [localhost.id]: http('http://127.0.0.1:8545'),
+  },
+})
 
 // Configure wallet connectors
 const { connectors } = getDefaultWallets({
   appName: 'DAO MultiSig Wallet',
   projectId: process.env.NEXT_PUBLIC_WALLET_CONNECT_PROJECT_ID || 'demo',
-  chains,
+  chains: [mainnet, sepolia, hardhat, localhost],
 })
 
-// Create wagmi config
-const wagmiConfig = createConfig({
-  autoConnect: true,
-  connectors,
-  publicClient,
-  webSocketPublicClient,
-})
-
-// Create query client
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
-      staleTime: 1000 * 60 * 5, // 5 minutes
-      cacheTime: 1000 * 60 * 10, // 10 minutes
+      staleTime: 1000 * 60 * 5,
+      gcTime: 1000 * 60 * 10, // Renamed from cacheTime
     },
   },
 })
@@ -61,9 +48,8 @@ const queryClient = new QueryClient({
 function MyApp({ Component, pageProps }) {
   return (
     <QueryClientProvider client={queryClient}>
-      <WagmiConfig config={wagmiConfig}>
+      <WagmiProvider config={config}>
         <RainbowKitProvider
-          chains={chains}
           theme={darkTheme({
             accentColor: '#7b3ff2',
             accentColorForeground: 'white',
@@ -79,7 +65,7 @@ function MyApp({ Component, pageProps }) {
         >
           <Component {...pageProps} />
         </RainbowKitProvider>
-      </WagmiConfig>
+      </WagmiProvider>
     </QueryClientProvider>
   )
 }

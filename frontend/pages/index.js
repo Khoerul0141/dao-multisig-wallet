@@ -1,7 +1,7 @@
 // file frontend/pages/index.js
 import { useState, useEffect } from 'react'
 import { ConnectButton } from '@rainbow-me/rainbowkit'
-import { useAccount, useContractRead, useContractWrite, useWaitForTransaction } from 'wagmi'
+import { useAccount, useReadContract, useWriteContract, useWaitForTransactionReceipt } from 'wagmi'
 import { parseEther, formatEther } from 'viem'
 import WalletInfo from '../components/WalletInfo'
 import TransactionList from '../components/TransactionList'
