@@ -1,27 +1,32 @@
 {
   "$schema": "https://raw.githubusercontent.com/SchemaStore/schemastore/master/src/schemas/json/package.json",
-"name": "dao-multisig-wallet",
+  "name": "dao-multisig-wallet",
   "version": "1.0.0",
   "description": "Implementasi Multi-Signature Web3 Wallet untuk DAO dengan Optimisasi Gas berbasis Solidity",
   "main": "index.js",
   "scripts": {
-    "compile": "hardhat compile",
-    "test": "hardhat test",
-    "test:unit": "hardhat test test/unit/",
-    "test:integration": "hardhat test test/integration/",
-    "test:gas": "REPORT_GAS=true hardhat test",
-    "deploy:local": "hardhat run scripts/deploy.js --network localhost",
-    "deploy:sepolia": "hardhat run scripts/deploy.js --network sepolia",
-    "simulate": "hardhat run scripts/simulate.js --network localhost",
-    "node": "hardhat node",
-    "clean": "hardhat clean",
-    "coverage": "hardhat coverage",
-    "verify": "hardhat verify",
-    "typechain": "hardhat typechain",
-    "dev": "next dev",
-    "build": "next build",
-    "start": "next start",
-    "lint": "next lint"
+    "compile": "npx hardhat compile",
+    "test": "npx hardhat test",
+    "test:unit": "npx hardhat test test/unit/",
+    "test:integration": "npx hardhat test test/integration/",
+    "test:gas": "REPORT_GAS=true npx hardhat test",
+    "deploy:local": "npx hardhat run scripts/deploy.ts --network localhost",
+    "deploy:sepolia": "npx hardhat run scripts/deploy.ts --network sepolia",
+    "simulate": "npx hardhat run scripts/simulate.ts --network localhost",
+    "node": "npx hardhat node",
+    "clean": "npx hardhat clean",
+    "coverage": "npx hardhat coverage",
+    "verify": "npx hardhat verify",
+    "typechain": "npx hardhat typechain",
+    "dev": "cd frontend && npm run dev",
+    "build": "cd frontend && npm run build",
+    "start": "cd frontend && npm run start",
+    "lint": "cd frontend && npm run lint",
+    "frontend:install": "cd frontend && npm install",
+    "frontend:dev": "cd frontend && npm run dev",
+    "frontend:build": "cd frontend && npm run build",
+    "check-types": "tsc --noEmit",
+    "build-contracts": "npx hardhat compile && npx hardhat typechain"
   },
   "keywords": [
     "blockchain",
@@ -31,7 +36,8 @@
     "multisig",
     "wallet",
     "web3",
-    "defi"
+    "defi",
+    "typescript"
   ],
   "author": "khoerul",
   "license": "MIT",
@@ -46,12 +52,6 @@
     "@types/chai": "^4.3.20",
     "@types/mocha": "^10.0.10",
     "@types/node": "^20.19.9",
-    "@types/react": "^18.2.0",
-    "@types/react-dom": "^18.2.0",
-    "@types/react-copy-to-clipboard": "^5.0.7",
-    "tailwindcss": "^3.4.17",
-    "postcss": "^8.4.31",
-    "autoprefixer": "^10.4.21",
     "chai": "^4.5.0",
     "cross-env": "^10.0.0",
     "dotenv": "^16.6.1",
@@ -63,31 +63,15 @@
     "typechain": "^8.3.2",
     "typescript": "^5.9.2"
   },
-  "dependencies": {
-    "@heroicons/react": "^2.0.18",
-    "@rainbow-me/rainbowkit": "^2.2.8",
-    "@safe-global/safe-apps-sdk": "^9.1.0",
-    "@tanstack/react-query": "^5.83.0",
-    "@types/react-copy-to-clipboard": "^5.0.7",
-    "autoprefixer": "^10.4.0",
-    "next": "^14.2.31",
-    "postcss": "^8.4.0",
-    "qr": "^0.5.0",
-    "react": "^18.0.0",
-    "react-copy-to-clipboard": "^5.1.0",
-    "react-dom": "^18.0.0",
-    "tailwindcss": "^3.3.0",
-    "viem": "^2.32.0",
-    "wagmi": "^2.15.7"
-  },
   "directories": {
-    "test": "test"
+    "test": "test",
+    "contracts": "contracts",
+    "scripts": "scripts"
   },
   "repository": {
     "type": "git",
     "url": "git+https://github.com/Khoerul0141/dao-multisig-wallet.git"
   },
-  "type": "commonjs",
   "bugs": {
     "url": "https://github.com/Khoerul0141/dao-multisig-wallet/issues"
   },

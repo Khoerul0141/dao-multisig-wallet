@@ -1,13 +1,15 @@
-require("@nomicfoundation/hardhat-toolbox");
-require("@typechain/hardhat");
-require("@typechain/ethers-v6");
-require("dotenv").config();
+import { HardhatUserConfig } from "hardhat/config";
+import "@nomicfoundation/hardhat-toolbox";
+import "@typechain/hardhat";
+import "@typechain/ethers-v6";
+import * as dotenv from "dotenv";
+
+dotenv.config();
 
 const ALCHEMY_API_KEY = process.env.ALCHEMY_API_KEY;
 const PRIVATE_KEY = process.env.PRIVATE_KEY;
 
-/** @type import('hardhat/config').HardhatUserConfig */
-module.exports = {
+const config: HardhatUserConfig = {
   solidity: {
     version: "0.8.20",
     settings: {
@@ -38,7 +40,6 @@ module.exports = {
     target: "ethers-v6",
     alwaysGenerateOverloads: false,
     discriminateTypes: false,
-    tsNoCheck: false,
   },
   networks: {
     hardhat: {
@@ -74,7 +75,7 @@ module.exports = {
       allowUnlimitedContractSize: true,
       chainId: 31337,
       timeout: 60000,
-      accounts: "remote"
+      accounts: "remote" as any
     },
   },
   gasReporter: {
@@ -107,3 +108,5 @@ module.exports = {
   // Additional configuration for better testing
   defaultNetwork: "hardhat",
 };
+
+export default config;

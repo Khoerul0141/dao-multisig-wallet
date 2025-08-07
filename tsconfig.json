@@ -2,20 +2,20 @@
   "$schema": "https://raw.githubusercontent.com/SchemaStore/schemastore/master/src/schemas/json/tsconfig.json",
   "compilerOptions": {
     "target": "ES2022",
-    "lib": ["ES2022" , "DOM"],
+    "lib": ["ES2022", "DOM"],
+    "module": "CommonJS",
+    "moduleResolution": "node",
     "allowJs": true,
     "skipLibCheck": true,
     "strict": true,
     "forceConsistentCasingInFileNames": true,
     "noEmit": true,
     "esModuleInterop": true,
-    "module": "ESnext",
-    "moduleResolution": "bundler",
+    "allowSyntheticDefaultImports": true,
     "resolveJsonModule": true,
     "isolatedModules": true,
     "jsx": "preserve",
     "incremental": true,
-    "plugins": [{"name": "next"}],
     "baseUrl": ".",
     "paths": {
       "@/*": ["./*"],
@@ -36,9 +36,25 @@
     "typeRoots": [
       "./node_modules/@types",
       "./typechain-types"
-    ]
+    ],
+    "declaration": false,
+    "declarationMap": false,
+    "sourceMap": false,
+    "outDir": "./dist",
+    "rootDir": ".",
+    "removeComments": true,
+    "noImplicitAny": true,
+    "strictNullChecks": true,
+    "strictFunctionTypes": true,
+    "noImplicitThis": true,
+    "noImplicitReturns": true,
+    "noFallthroughCasesInSwitch": true,
+    "noUncheckedIndexedAccess": false,
+    "experimentalDecorators": true,
+    "emitDecoratorMetadata": true
   },
   "include": [
+    "hardhat.config.ts",
     "hardhat.d.ts",
     "next-env.d.ts",
     "**/*.ts",
@@ -47,7 +63,6 @@
     "test/**/*",
     "scripts/**/*",
     "typechain-types/**/*",
-    "hardhat.config.js",
     "frontend/**/*"
   ],
   "exclude": [
@@ -62,7 +77,8 @@
     "test/unit/tempCodeRunnerFile.ts"
   ],
   "ts-node": {
-    "esm": true,
-    "experimentalSpecifierResolution": "node"
+    "esm": false,
+    "files": true,
+    "transpileOnly": true
   }
 }
