@@ -98,7 +98,11 @@ function getDeploymentOptions(networkName: string): DeploymentOptions {
 
 async function main(): Promise<DeploymentResult> {
   console.log("🚀 Starting DAO Multi-Signature Wallet deployment...");
-  console.log("Network:", (await ethers.provider.getNetwork()).name);
+  
+  // Get network info
+  const network = await ethers.provider.getNetwork();
+  const networkName = network.name || "unknown";
+  console.log("Network:", networkName);
   
   // Get deployer account
   const [deployer] = await ethers.getSigners();
@@ -111,7 +115,7 @@ async function main(): Promise<DeploymentResult> {
   console.log("\n📦 Deploying GasOptimizer library...");
   
   const GasOptimizer = await ethers.getContractFactory("GasOptimizer");
-  const deployOptions = getDeploymentOptions((await ethers.provider.getNetwork()).name);
+  const deployOptions = getDeploymentOptions(networkName);
   
   const gasOptimizer: GasOptimizer = await GasOptimizer.deploy(deployOptions);
   await gasOptimizer.waitForDeployment();
@@ -120,15 +124,19 @@ async function main(): Promise<DeploymentResult> {
   console.log("✅ GasOptimizer deployed to:", gasOptimizerAddress);
   
   const deployTx = gasOptimizer.deploymentTransaction();
+  let gasOptimizerGas = "0";
   if (deployTx) {
     const receipt = await deployTx.wait();
-    console.log("⛽ Gas used for GasOptimizer:", receipt?.gasUsed.toString());
+    if (receipt) {
+      gasOptimizerGas = receipt.gasUsed.toString();
+      console.log("⛽ Gas used for GasOptimizer:", gasOptimizerGas);
+    }
   }
 
   // STEP 2: Setup initial signers
   let initialSigners: string[];
   
-  if ((await ethers.provider.getNetwork()).name === "sepolia") {
+  if (networkName === "sepolia") {
     initialSigners = [
       deployer.address,
       "0x70997970C51812dc3A010C7d01b50e0d17dc79C8", // Replace with actual addresses
@@ -136,11 +144,21 @@ async function main(): Promise<DeploymentResult> {
     ];
   } else {
     const signers = await ethers.getSigners();
-    initialSigners = [
-      signers[0].address,
-      signers[1].address,
-      signers[2].address
-    ];
+    if (signers.length >= 3) {
+      initialSigners = [
+        signers[0].address,
+        signers[1].address,
+        signers[2].address
+      ];
+    } else {
+      // Fallback if not enough signers available
+      initialSigners = [
+        deployer.address,
+        deployer.address, // Will need to be replaced in production
+        deployer.address  // Will need to be replaced in production
+      ];
+      console.log("⚠️ Warning: Using deployer address as multiple signers for testing");
+    }
   }
   
   const requiredSignatures = 2;
@@ -160,8 +178,9 @@ async function main(): Promise<DeploymentResult> {
   const libraryInfo = await detectLibraryDependencies("DAOMultiSigWallet");
   console.log("🔍 Library analysis:", libraryInfo.needsLinking ? "Linking required" : "No linking needed");
   
-  let daoWallet: DAOMultiSigWallet;
-  let deploymentMethod: string;
+  let daoWallet: DAOMultiSigWallet | undefined;
+  let deploymentMethod: string = "";
+  let daoWalletGas = "0";
   
   if (libraryInfo.needsLinking) {
     console.log("🔗 Deploying with library linking...");
@@ -190,6 +209,7 @@ async function main(): Promise<DeploymentResult> {
           deployOptions
         ) as DAOMultiSigWallet;
         
+        await daoWallet.waitForDeployment();
         deployed = true;
         deploymentMethod = `Library linking (config ${i + 1})`;
         console.log("   ✅ Success with config", i + 1);
@@ -199,7 +219,7 @@ async function main(): Promise<DeploymentResult> {
       }
     }
     
-    if (!deployed) {
+    if (!deployed || !daoWallet) {
       throw new Error("All library linking methods failed");
     }
   } else {
@@ -215,25 +235,33 @@ async function main(): Promise<DeploymentResult> {
       deployOptions
     ) as DAOMultiSigWallet;
     
+    await daoWallet.waitForDeployment();
     deploymentMethod = "Standard deployment (no linking needed)";
     console.log("✅ Standard deployment successful");
   }
 
-  await daoWallet.waitForDeployment();
+  // Ensure daoWallet is properly initialized
+  if (!daoWallet) {
+    throw new Error("Failed to deploy DAOMultiSigWallet contract");
+  }
+
+  // Ensure deploymentMethod is set
+  if (!deploymentMethod) {
+    deploymentMethod = "Unknown deployment method";
+  }
+
   const daoWalletAddress = await daoWallet.getAddress();
   
   console.log("✅ DAOMultiSigWallet deployed to:", daoWalletAddress);
   console.log("🔧 Deployment method:", deploymentMethod);
 
   const walletDeployTx = daoWallet.deploymentTransaction();
-  let gasUsed = {};
   if (walletDeployTx) {
     const receipt = await walletDeployTx.wait();
-    console.log("⛽ Gas used for DAOMultiSigWallet:", receipt?.gasUsed.toString());
-    gasUsed = {
-      gasOptimizer: deployTx?.gasUsed?.toString() || "0",
-      daoWallet: receipt?.gasUsed.toString() || "0"
-    };
+    if (receipt) {
+      daoWalletGas = receipt.gasUsed.toString();
+      console.log("⛽ Gas used for DAOMultiSigWallet:", daoWalletGas);
+    }
   }
 
   // STEP 4: Verification
@@ -292,7 +320,6 @@ async function main(): Promise<DeploymentResult> {
   }
 
   // STEP 6: Fund wallet (local networks only)
-  const networkName = (await ethers.provider.getNetwork()).name;
   if (networkName === "hardhat" || networkName === "localhost") {
     console.log("\n💸 Funding wallet for testing...");
     try {
@@ -311,7 +338,7 @@ async function main(): Promise<DeploymentResult> {
 
   // STEP 7: Save deployment info
   console.log("\n📄 Saving deployment information...");
-  const chainId = (await ethers.provider.getNetwork()).chainId;
+  const chainId = network.chainId;
   const deploymentInfo: DeploymentInfo = {
     network: networkName,
     chainId: Number(chainId),
@@ -333,7 +360,10 @@ async function main(): Promise<DeploymentResult> {
         walletVersion: walletVersion
       }
     },
-    gasUsage: gasUsed as any
+    gasUsage: {
+      gasOptimizer: gasOptimizerGas,
+      daoWallet: daoWalletGas
+    }
   };
 
   try {
