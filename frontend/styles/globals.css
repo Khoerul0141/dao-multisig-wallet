@@ -1,4 +1,93 @@
 /* file frontend/styles/globals.css */
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Custom CSS Variables */
+:root {
+  --primary-purple: #7b3ff2;
+  --primary-purple-dark: #6d28d9;
+  --secondary-blue: #3b82f6;
+  --secondary-blue-dark: #2563eb;
+  --accent-green: #10b981;
+  --accent-red: #ef4444;
+  --accent-yellow: #f59e0b;
+  --bg-dark: #0f172a;
+  --bg-dark-secondary: #1e293b;
+  --text-primary: #f8fafc;
+  --text-secondary: #cbd5e1;
+  --border-color: rgba(255, 255, 255, 0.1);
+}
+
+/* Global Styles */
+* {
+  box-sizing: border-box;
+  padding: 0;
+  margin: 0;
+}
+
+html,
+body {
+  max-width: 100vw;
+  overflow-x: hidden;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
+    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
+    sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  background-color: var(--bg-dark);
+  color: var(--text-primary);
+}
+
+body {
+  color: rgb(var(--foreground-rgb));
+  background: linear-gradient(
+      to bottom,
+      transparent,
+      rgb(var(--background-end-rgb))
+    )
+    rgb(var(--background-start-rgb));
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+/* Custom Gradient Backgrounds */
+.gradient-bg {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+}
+
+.gradient-bg-purple {
+  background: linear-gradient(135deg, #7b3ff2 0%, #6d28d9 100%);
+}
+
+.gradient-bg-blue {
+  background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+}
+
+.gradient-bg-green {
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+}
+
+.gradient-bg-red {
+  background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+}
+
+.gradient-bg-rainbow {
+  background: linear-gradient(
+    45deg,
+    #ff006e,
+    #fb5607,
+    #ffbe0b,
+    #8338ec,
+    #3a86ff
+  );
+  background-size: 300% 300%;
+  animation: rainbow 8s ease infinite;
+}
+
 @keyframes rainbow {
   0% { background-position: 0% 50%; }
   50% { background-position: 100% 50%; }
@@ -458,93 +547,4 @@
 
 .stats-card-gray {
   @apply from-gray-500 to-gray-600;
-}tailwind base;
-@tailwind components;
-@tailwind utilities;
-
-/* Custom CSS Variables */
-:root {
-  --primary-purple: #7b3ff2;
-  --primary-purple-dark: #6d28d9;
-  --secondary-blue: #3b82f6;
-  --secondary-blue-dark: #2563eb;
-  --accent-green: #10b981;
-  --accent-red: #ef4444;
-  --accent-yellow: #f59e0b;
-  --bg-dark: #0f172a;
-  --bg-dark-secondary: #1e293b;
-  --text-primary: #f8fafc;
-  --text-secondary: #cbd5e1;
-  --border-color: rgba(255, 255, 255, 0.1);
 }
-
-/* Global Styles */
-* {
-  box-sizing: border-box;
-  padding: 0;
-  margin: 0;
-}
-
-html,
-body {
-  max-width: 100vw;
-  overflow-x: hidden;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
-    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
-    sans-serif;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-  background-color: var(--bg-dark);
-  color: var(--text-primary);
-}
-
-body {
-  color: rgb(var(--foreground-rgb));
-  background: linear-gradient(
-      to bottom,
-      transparent,
-      rgb(var(--background-end-rgb))
-    )
-    rgb(var(--background-start-rgb));
-}
-
-a {
-  color: inherit;
-  text-decoration: none;
-}
-
-/* Custom Gradient Backgrounds */
-.gradient-bg {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-}
-
-.gradient-bg-purple {
-  background: linear-gradient(135deg, #7b3ff2 0%, #6d28d9 100%);
-}
-
-.gradient-bg-blue {
-  background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
-}
-
-.gradient-bg-green {
-  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
-}
-
-.gradient-bg-red {
-  background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
-}
-
-.gradient-bg-rainbow {
-  background: linear-gradient(
-    45deg,
-    #ff006e,
-    #fb5607,
-    #ffbe0b,
-    #8338ec,
-    #3a86ff
-  );
-  background-size: 300% 300%;
-  animation: rainbow 8s ease infinite;
-}
-
-@

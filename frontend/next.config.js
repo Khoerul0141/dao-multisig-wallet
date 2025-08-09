@@ -1,18 +1,18 @@
-// file frontend/next.config.js
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
   swcMinify: true,
   
-  // Optimasi untuk production
+  // Disable optimizeCss experiment that causes critters issue
   experimental: {
     esmExternals: false,
-    optimizeCss: true,
+    // Remove optimizeCss for now
+    // optimizeCss: true,
   },
 
-  // Konfigurasi untuk Web3 dan blockchain libraries
+  // Webpack configuration untuk Web3 libraries
   webpack: (config, { buildId, dev, isServer, defaultLoaders, webpack }) => {
-    // Polyfill untuk Node.js modules yang tidak tersedia di browser
+    // Polyfill untuk Node.js modules
     config.resolve.fallback = {
       ...config.resolve.fallback,
       fs: false,
@@ -42,26 +42,17 @@ const nextConfig = {
       /Critical dependency: the request of a dependency is an expression/,
     ]
 
-    // Optimasi bundle splitting
-    if (!isServer) {
-      config.resolve.alias = {
-        ...config.resolve.alias,
-        '@': __dirname,
-      }
-    }
-
     return config
   },
 
-  // Environment variables yang tersedia di client-side
+  // Environment variables
   env: {
-    CUSTOM_KEY: process.env.CUSTOM_KEY,
     NEXT_PUBLIC_ALCHEMY_API_KEY: process.env.NEXT_PUBLIC_ALCHEMY_API_KEY,
     NEXT_PUBLIC_WALLET_CONNECT_PROJECT_ID: process.env.NEXT_PUBLIC_WALLET_CONNECT_PROJECT_ID,
     NEXT_PUBLIC_CONTRACT_ADDRESS: process.env.NEXT_PUBLIC_CONTRACT_ADDRESS,
   },
 
-  // Konfigurasi images
+  // Images configuration
   images: {
     domains: [
       'localhost',
@@ -73,88 +64,17 @@ const nextConfig = {
     contentSecurityPolicy: "default-src 'self'; script-src 'none'; sandbox;",
   },
 
-  // Headers untuk security
-  async headers() {
-    return [
-      {
-        source: '/(.*)',
-        headers: [
-          {
-            key: 'X-Frame-Options',
-            value: 'DENY',
-          },
-          {
-            key: 'X-Content-Type-Options',
-            value: 'nosniff',
-          },
-          {
-            key: 'Referrer-Policy',
-            value: 'strict-origin-when-cross-origin',
-          },
-          {
-            key: 'Content-Security-Policy',
-            value: [
-              "default-src 'self'",
-              "script-src 'self' 'unsafe-eval' 'unsafe-inline'",
-              "style-src 'self' 'unsafe-inline'",
-              "img-src 'self' data: https:",
-              "font-src 'self'",
-              "connect-src 'self' https: wss:",
-              "frame-src 'none'",
-            ].join('; '),
-          },
-        ],
-      },
-    ]
-  },
-
-  // Redirects
-  async redirects() {
-    return [
-      {
-        source: '/home',
-        destination: '/',
-        permanent: true,
-      },
-    ]
-  },
-
-  // Rewrites untuk API routes
-  async rewrites() {
-    return [
-      {
-        source: '/api/:path*',
-        destination: '/api/:path*',
-      },
-    ]
-  },
-
-  // Optimasi untuk production
-  compiler: {
-    removeConsole: process.env.NODE_ENV === 'production',
-  },
-
-  // Output untuk deployment
+  // Disable CSS optimization that causes critters issue
+  optimizeFonts: false,
+  
+  // Output configuration
   output: 'standalone',
   
-  // Optimasi bundle
-  onDemandEntries: {
-    maxInactiveAge: 25 * 1000,
-    pagesBufferLength: 2,
-  },
-
-  // Kompresi
+  // Compression
   compress: true,
 
   // Generate ETags
   generateEtags: true,
-
-  // PWA configuration (optional)
-  // withPWA: {
-  //   dest: 'public',
-  //   register: true,
-  //   skipWaiting: true,
-  // },
 }
 
 module.exports = nextConfig
