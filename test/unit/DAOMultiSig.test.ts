@@ -171,25 +171,26 @@ describe("DAOMultiSigWallet", function () {
         });
 
         it("Should reject transactions with invalid parameters", async function () {
-            const deadline = Math.floor(Date.now() / 1000) + 86400;
-            
-            // Invalid recipient
+            // Test invalid recipient
             await expect(
                 wallet.connect(signer1).submitTransaction(
                     ethers.ZeroAddress,
                     ethers.parseEther("1.0"),
                     "0x",
-                    deadline
+                    Math.floor(Date.now() / 1000) + 86400
                 )
             ).to.be.revertedWith("Invalid recipient");
 
-            // Invalid deadline
+            // Test invalid deadline - GUNAKAN TIMESTAMP YANG BENAR
+            const currentTime = await time.latest();
+            const pastDeadline = currentTime - 1; // 1 detik yang lalu
+            
             await expect(
                 wallet.connect(signer1).submitTransaction(
                     recipient.address,
                     ethers.parseEther("1.0"),
                     "0x",
-                    Math.floor(Date.now() / 1000) - 1000
+                    pastDeadline // Deadline di masa lalu
                 )
             ).to.be.revertedWith("Invalid deadline");
         });
@@ -356,22 +357,40 @@ describe("DAOMultiSigWallet", function () {
         });
 
         it("Should respect execution delay", async function () {
+            // This test requires its own transaction to control the deadline and submission time.
+            // The transaction from `beforeEach` has a deadline that is too short.
+            const submissionTime = await time.latest();
+            const longDeadline = submissionTime + 30 * 24 * 60 * 60; // 30-day deadline
+
+            await wallet.connect(signer1).submitTransaction(
+                recipient.address,
+                ethers.parseEther("1.0"),
+                "0x",
+                longDeadline
+            );
+            // Get the ID of the transaction we just created
+            const txId = (await wallet.transactionCount()) - 1n;
+
+            // Vote to meet the threshold
             await wallet.connect(signer1).voteOnTransaction(txId, true);
             await wallet.connect(signer2).voteOnTransaction(txId, true);
-            
-            // Fast forward past voting period but not execution delay
+
+            // Fast forward just past the voting period (7 days)
             await time.increase(7 * 24 * 60 * 60 + 1);
 
+            // At this point, voting is over, but the 1-day execution delay has NOT been met.
+            // This call should fail.
             await expect(
                 wallet.connect(signer1).executeTransaction(txId)
             ).to.be.revertedWith("Execution delay not met");
 
-            // Fast forward past execution delay
-            await time.increase(24 * 60 * 60 + 1);
+            // Fast forward to meet the execution delay
+            await time.increase(24 * 60 * 60); // Add 1 day
 
+            // Now, the execution should succeed.
             await expect(
                 wallet.connect(signer1).executeTransaction(txId)
-            ).to.not.be.reverted;
+            ).to.emit(wallet, "TransactionExecuted").withArgs(txId, signer1.address, true);
         });
 
         it("Should handle execution when paused", async function () {
@@ -644,8 +663,9 @@ describe("DAOMultiSigWallet", function () {
         });
 
         it("Should handle transaction expiry", async function () {
-            // Submit transaction with short deadline
-            const shortDeadline = Math.floor(Date.now() / 1000) + 3600; // 1 hour
+            // Submit transaction dengan deadline yang pendek
+            const currentTime = await time.latest();
+            const shortDeadline = currentTime + 3600; // Hanya 1 jam dari sekarang
             
             await wallet.connect(signer1).submitTransaction(
                 recipient.address,
@@ -654,12 +674,15 @@ describe("DAOMultiSigWallet", function () {
                 shortDeadline
             );
 
+            // Vote sampai mencukupi
             await wallet.connect(signer1).voteOnTransaction(0, true);
             await wallet.connect(signer2).voteOnTransaction(0, true);
 
-            // Fast forward past deadline
+            // Fast forward melewati deadline
+            // 7 hari voting + 1 hari execution delay + lebih dari 1 jam deadline
             await time.increase(7 * 24 * 60 * 60 + 24 * 60 * 60 + 3600 + 1);
 
+            // Coba execute - harus gagal karena expired
             await expect(
                 wallet.connect(signer1).executeTransaction(0)
             ).to.be.revertedWith("Transaction expired");
