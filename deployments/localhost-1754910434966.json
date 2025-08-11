@@ -1,0 +1,30 @@
+{
+  "network": "localhost",
+  "chainId": 31337,
+  "deployedAt": "2025-08-11T11:07:14.966Z",
+  "deployer": "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266",
+  "deploymentMethod": "Standard deployment (no linking needed)",
+  "libraryLinking": false,
+  "contracts": {
+    "GasOptimizer": {
+      "address": "0x9Bb65b12162a51413272d10399282E730822Df44",
+      "txHash": "0x355de455a5cf4f9cd09f99df4f540a9f55d57dea6ff90cb0aee3477b97a3c22f"
+    },
+    "DAOMultiSigWallet": {
+      "address": "0x7A5EC257391817ef241ef8451642cC6b222d4f8C",
+      "txHash": "0x84a705394ea4df6692df48cdc2c7318f616eeb946d0dddb4cacc3512a77889fd",
+      "initialSigners": [
+        "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266",
+        "0x70997970C51812dc3A010C7d01b50e0d17dc79C8",
+        "0x3C44CdDdB6a900fa2b585dd299e03d12FA4293BC"
+      ],
+      "requiredSignatures": 2,
+      "walletName": "DAO MultiSig Wallet",
+      "walletVersion": "1.0.0"
+    }
+  },
+  "gasUsage": {
+    "gasOptimizer": "63360",
+    "daoWallet": "3394402"
+  }
+}
