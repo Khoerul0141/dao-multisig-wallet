@@ -1,0 +1,2279 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <title>Code coverage report for contracts\GasOptimizer.sol</title>
+    <meta charset="utf-8" />
+    <link rel="stylesheet" href="../prettify.css" />
+    <link rel="stylesheet" href="../base.css" />
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <style type='text/css'>
+        .coverage-summary .sorter {
+            background-image: url(../sort-arrow-sprite.png);
+        }
+    </style>
+</head>
+<body>
+<div class='wrapper'>
+  <div class='pad1'>
+    <h1>
+      <a href="../index.html">all files</a> / <a href="index.html">contracts/</a> GasOptimizer.sol
+    </h1>
+    <div class='clearfix'>
+      <div class='fl pad1y space-right2'>
+        <span class="strong">0% </span>
+        <span class="quiet">Statements</span>
+        <span class='fraction'>0/61</span>
+      </div>
+      <div class='fl pad1y space-right2'>
+        <span class="strong">0% </span>
+        <span class="quiet">Branches</span>
+        <span class='fraction'>0/46</span>
+      </div>
+      <div class='fl pad1y space-right2'>
+        <span class="strong">0% </span>
+        <span class="quiet">Functions</span>
+        <span class='fraction'>0/28</span>
+      </div>
+      <div class='fl pad1y space-right2'>
+        <span class="strong">0% </span>
+        <span class="quiet">Lines</span>
+        <span class='fraction'>0/102</span>
+      </div>
+    </div>
+  </div>
+  <div class='status-line low'></div>
+<pre><table class="coverage">
+<tr><td class="line-count quiet">1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+20
+21
+22
+23
+24
+25
+26
+27
+28
+29
+30
+31
+32
+33
+34
+35
+36
+37
+38
+39
+40
+41
+42
+43
+44
+45
+46
+47
+48
+49
+50
+51
+52
+53
+54
+55
+56
+57
+58
+59
+60
+61
+62
+63
+64
+65
+66
+67
+68
+69
+70
+71
+72
+73
+74
+75
+76
+77
+78
+79
+80
+81
+82
+83
+84
+85
+86
+87
+88
+89
+90
+91
+92
+93
+94
+95
+96
+97
+98
+99
+100
+101
+102
+103
+104
+105
+106
+107
+108
+109
+110
+111
+112
+113
+114
+115
+116
+117
+118
+119
+120
+121
+122
+123
+124
+125
+126
+127
+128
+129
+130
+131
+132
+133
+134
+135
+136
+137
+138
+139
+140
+141
+142
+143
+144
+145
+146
+147
+148
+149
+150
+151
+152
+153
+154
+155
+156
+157
+158
+159
+160
+161
+162
+163
+164
+165
+166
+167
+168
+169
+170
+171
+172
+173
+174
+175
+176
+177
+178
+179
+180
+181
+182
+183
+184
+185
+186
+187
+188
+189
+190
+191
+192
+193
+194
+195
+196
+197
+198
+199
+200
+201
+202
+203
+204
+205
+206
+207
+208
+209
+210
+211
+212
+213
+214
+215
+216
+217
+218
+219
+220
+221
+222
+223
+224
+225
+226
+227
+228
+229
+230
+231
+232
+233
+234
+235
+236
+237
+238
+239
+240
+241
+242
+243
+244
+245
+246
+247
+248
+249
+250
+251
+252
+253
+254
+255
+256
+257
+258
+259
+260
+261
+262
+263
+264
+265
+266
+267
+268
+269
+270
+271
+272
+273
+274
+275
+276
+277
+278
+279
+280
+281
+282
+283
+284
+285
+286
+287
+288
+289
+290
+291
+292
+293
+294
+295
+296
+297
+298
+299
+300
+301
+302
+303
+304
+305
+306
+307
+308
+309
+310
+311
+312
+313
+314
+315
+316
+317
+318
+319
+320
+321
+322
+323
+324
+325
+326
+327
+328
+329
+330
+331
+332
+333
+334
+335
+336
+337
+338
+339
+340
+341
+342
+343
+344
+345
+346
+347
+348
+349
+350
+351
+352
+353
+354
+355
+356
+357
+358
+359
+360
+361
+362
+363
+364
+365
+366
+367
+368
+369
+370
+371
+372
+373
+374
+375
+376
+377
+378
+379
+380
+381
+382
+383
+384
+385
+386
+387
+388
+389
+390
+391
+392
+393
+394
+395
+396
+397
+398
+399
+400
+401
+402
+403
+404
+405
+406
+407
+408
+409
+410
+411
+412
+413
+414
+415
+416
+417
+418
+419
+420
+421
+422
+423
+424
+425
+426
+427
+428
+429
+430
+431
+432
+433
+434
+435
+436
+437
+438
+439
+440
+441
+442
+443
+444
+445
+446
+447
+448
+449
+450
+451
+452
+453
+454
+455
+456
+457
+458
+459
+460
+461
+462
+463
+464
+465
+466
+467
+468
+469
+470
+471
+472
+473
+474
+475
+476
+477
+478
+479
+480
+481
+482
+483
+484
+485
+486
+487
+488
+489
+490
+491
+492
+493
+494
+495
+496
+497
+498
+499
+500
+501
+502
+503
+504
+505
+506
+507
+508
+509
+510
+511
+512
+513
+514
+515
+516
+517
+518
+519
+520
+521
+522
+523
+524
+525
+526
+527
+528
+529
+530
+531
+532
+533
+534
+535
+536
+537
+538
+539
+540
+541
+542
+543
+544
+545
+546
+547
+548
+549
+550
+551
+552
+553
+554
+555
+556
+557
+558
+559
+560
+561
+562
+563
+564
+565
+566
+567
+568
+569
+570
+571
+572
+573
+574
+575
+576
+577
+578
+579
+580
+581
+582
+583
+584
+585
+586
+587
+588
+589
+590
+591
+592
+593
+594
+595
+596
+597
+598
+599
+600
+601
+602
+603
+604
+605
+606
+607
+608
+609
+610
+611
+612
+613
+614
+615
+616
+617
+618
+619
+620
+621
+622
+623
+624
+625
+626
+627
+628
+629
+630
+631
+632
+633
+634
+635
+636
+637
+638
+639
+640
+641
+642
+643
+644
+645
+646
+647
+648
+649
+650
+651
+652
+653
+654
+655
+656
+657
+658
+659
+660
+661
+662
+663
+664
+665
+666
+667
+668
+669
+670
+671
+672
+673
+674
+675
+676
+677
+678
+679
+680
+681
+682
+683
+684
+685
+686
+687
+688
+689
+690
+691
+692
+693
+694
+695
+696
+697
+698
+699
+700
+701
+702
+703
+704
+705
+706
+707
+708
+709
+710
+711
+712
+713
+714
+715
+716
+717
+718
+719
+720
+721
+722
+723
+724
+725
+726
+727
+728
+729
+730
+731
+732
+733
+734
+735
+736
+737
+738
+739</td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js">// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.20;
+&nbsp;
+/**
+ * @title GasOptimizer
+ * @dev Library untuk optimisasi gas dalam operasi multisig wallet
+ * @author khoerul
+ */
+library GasOptimizer {
+    
+    // Custom errors for gas optimization
+    error ArrayLengthMismatch();
+    error InvalidUrgencyMultiplier();
+    error InvalidSignatureLength();
+    error InvalidSignatureRecoveryId();
+    error DivisionByZero();
+    error InvalidChunkSize();
+    error DuplicateAddress();
+&nbsp;
+    // Struct untuk batch transactions
+    struct BatchTransaction {
+        address to;
+        uint256 value;
+        bytes data;
+    }
+    
+    // Struct untuk optimized signer data
+    struct SignerInfo {
+        address signer;
+        bool isActive;
+        uint256 lastActivity;
+    }
+&nbsp;
+    // Constants for gas calculations
+    uint256 private constant BASE_GAS = 21000;
+    uint256 private constant GAS_PER_BYTE = 16;
+    uint256 private constant VALUE_TRANSFER_GAS = 9000;
+    uint256 private constant SSTORE_GAS = 20000;
+    uint256 private constant BATCH_OVERHEAD = 1000;
+&nbsp;
+    /**
+     * @dev Check if addresses in array are unique (optimized version)
+     */
+<span class="fstat-no" title="function not covered" >    function checkUniqueAddresses(address[] memory addresses) </span>
+        internal 
+        pure 
+        returns (bool) 
+    {
+<span class="cstat-no" title="statement not covered" >        if (addresses.length &lt;= 1) <span class="cstat-no" title="statement not covered" >return true;</span></span>
+        
+        // Use assembly for gas optimization
+        assembly {
+            let length := mload(addresses)
+            let dataPtr := add(addresses, 0x20)
+            
+            // Outer loop
+            for { let i := 0 } lt(i, sub(length, 1)) { i := add(i, 1) } {
+                let addrI := mload(add(dataPtr, mul(i, 0x20)))
+                
+                // Inner loop
+                for { let j := add(i, 1) } lt(j, length) { j := add(j, 1) } {
+                    let addrJ := mload(add(dataPtr, mul(j, 0x20)))
+                    if eq(addrI, addrJ) {
+                        // Store revert data
+                        let ptr := mload(0x40)
+                        mstore(ptr, 0x08c379a000000000000000000000000000000000000000000000000000000000)
+                        mstore(add(ptr, 0x04), 0x20)
+                        mstore(add(ptr, 0x24), 17)
+                        mstore(add(ptr, 0x44), "Duplicate address")
+                        revert(ptr, 0x64)
+                    }
+                }
+            }
+        }
+<span class="cstat-no" title="statement not covered" >        return true;</span>
+    }
+    
+    /**
+     * @dev Estimate gas for a transaction (enhanced)
+     */
+<span class="fstat-no" title="function not covered" >    function estimateGas(</span>
+        address target,
+        uint256 value,
+        bytes memory data
+    ) 
+        internal 
+        view
+        returns (uint256) 
+    {
+<span class="cstat-no" title="statement not covered" >        uint256 gasEstimate = BASE_GAS;</span>
+        
+        // Add gas for data
+<span class="cstat-no" title="statement not covered" >        if (data.length &gt; 0) {</span>
+            gasEstimate += data.length * GAS_PER_BYTE;
+            
+            // Additional gas for contract calls
+<span class="cstat-no" title="statement not covered" >            if (target.code.length &gt; 0) {</span>
+                gasEstimate += 25000; // CALL to contract
+            }
+        }
+        
+        // Add gas for value transfer
+<span class="cstat-no" title="statement not covered" >        if (value &gt; 0) {</span>
+            gasEstimate += VALUE_TRANSFER_GAS;
+        }
+        
+<span class="cstat-no" title="statement not covered" >        return gasEstimate;</span>
+    }
+    
+    /**
+     * @dev Estimate gas for batch transactions (optimized)
+     */
+<span class="fstat-no" title="function not covered" >    function estimateBatchGas(BatchTransaction[] memory transactions)</span>
+        internal
+        pure
+        returns (uint256 totalGas)
+    {
+<span class="cstat-no" title="statement not covered" >        uint256 length = transactions.length;</span>
+        
+        // Use assembly for gas-efficient loop
+        assembly {
+            let txPtr := add(transactions, 0x20)
+            for { let i := 0 } lt(i, length) { i := add(i, 1) } {
+                let txData := add(txPtr, mul(i, 0x60)) // Each struct is 3 * 32 bytes
+                let to := mload(txData)
+                let value := mload(add(txData, 0x20))
+                let dataPtr := mload(add(txData, 0x40))
+                let dataLength := mload(dataPtr)
+                
+                // Base gas calculation
+                totalGas := add(totalGas, BASE_GAS)
+                
+                // Data gas
+                totalGas := add(totalGas, mul(dataLength, GAS_PER_BYTE))
+                
+                // Value transfer gas
+                if gt(value, 0) {
+                    totalGas := add(totalGas, VALUE_TRANSFER_GAS)
+                }
+            }
+        }
+        
+        // Add batch processing overhead
+        totalGas += length * BATCH_OVERHEAD;
+    }
+    
+    /**
+     * @dev Optimize storage by packing address and amount
+     */
+<span class="fstat-no" title="function not covered" >    function packAddressAndAmount(address addr, uint96 amount)</span>
+        internal
+        pure
+        returns (bytes32)
+    {
+<span class="cstat-no" title="statement not covered" >        return bytes32(uint256(uint160(addr)) | (uint256(amount) &lt;&lt; 160));</span>
+    }
+    
+    /**
+     * @dev Unpack address and amount from packed data
+     */
+<span class="fstat-no" title="function not covered" >    function unpackAddressAndAmount(bytes32 packed)</span>
+        internal
+        pure
+        returns (address addr, uint96 amount)
+    {
+        addr = address(uint160(uint256(packed)));
+        amount = uint96(uint256(packed) &gt;&gt; 160);
+    }
+    
+    /**
+     * @dev Calculate optimal gas price with EIP-1559 support
+     */
+<span class="fstat-no" title="function not covered" >    function calculateOptimalGasPrice(</span>
+        uint256 baseFee,
+        uint256 priorityFee,
+        uint256 urgencyMultiplier
+    )
+        internal
+        pure
+        returns (uint256)
+    {
+<span class="cstat-no" title="statement not covered" >        if (urgencyMultiplier == 0 || urgencyMultiplier &gt; 10) {</span>
+            revert InvalidUrgencyMultiplier();
+        }
+        
+<span class="cstat-no" title="statement not covered" >        uint256 maxPriorityFee = priorityFee * urgencyMultiplier;</span>
+<span class="cstat-no" title="statement not covered" >        return baseFee + maxPriorityFee;</span>
+    }
+    
+    /**
+     * @dev Optimized array element removal
+     */
+<span class="fstat-no" title="function not covered" >    function efficientArrayRemoval(</span>
+        address[] storage array,
+        address elementToRemove
+    )
+        internal
+        returns (bool found)
+    {
+<span class="cstat-no" title="statement not covered" >        uint256 length = array.length;</span>
+        
+<span class="cstat-no" title="statement not covered" >        for (uint256 i = 0; i &lt; length; i++) {</span>
+<span class="cstat-no" title="statement not covered" >            if (array[i] == elementToRemove) {</span>
+                // Move last element to current position and pop
+                array[i] = array[length - 1];
+<span class="cstat-no" title="statement not covered" >                array.pop()</span>;
+<span class="cstat-no" title="statement not covered" >                return true;</span>
+            }
+        }
+<span class="cstat-no" title="statement not covered" >        return false;</span>
+    }
+    
+    /**
+     * @dev Batch verify signatures using assembly (gas optimized)
+     */
+<span class="fstat-no" title="function not covered" >    function batchVerifySignatures(</span>
+        bytes32[] memory hashes,
+        bytes[] memory signatures,
+        address[] memory signers
+    )
+        internal
+        pure
+        returns (bool)
+    {
+<span class="cstat-no" title="statement not covered" >        uint256 length = hashes.length;</span>
+<span class="cstat-no" title="statement not covered" >        if (length != signatures.length || signatures.length != signers.length) {</span>
+            revert ArrayLengthMismatch();
+        }
+        
+        // Use assembly for efficient batch verification
+        assembly {
+            let hashesPtr := add(hashes, 0x20)
+            let signaturesPtr := add(signatures, 0x20)
+            let signersPtr := add(signers, 0x20)
+            
+            for { let i := 0 } lt(i, length) { i := add(i, 1) } {
+                let hash := mload(add(hashesPtr, mul(i, 0x20)))
+                let signature := mload(add(signaturesPtr, mul(i, 0x20)))
+                let expectedSigner := mload(add(signersPtr, mul(i, 0x20)))
+                
+                // Verify signature (simplified check)
+                let signatureLength := mload(signature)
+                if iszero(eq(signatureLength, 65)) {
+                    return(0, 0)
+                }
+            }
+        }
+        
+<span class="cstat-no" title="statement not covered" >        return true;</span>
+    }
+    
+    /**
+     * @dev Enhanced signature verification with assembly optimization
+     */
+<span class="fstat-no" title="function not covered" >    function verifySignature(</span>
+        bytes32 hash,
+        bytes memory signature,
+        address expectedSigner
+    )
+        internal
+        pure
+        returns (bool)
+    {
+<span class="cstat-no" title="statement not covered" >        if (signature.length != 65) {</span>
+            revert InvalidSignatureLength();
+        }
+        
+<span class="cstat-no" title="statement not covered" >        bytes32 r;</span>
+<span class="cstat-no" title="statement not covered" >        bytes32 s;</span>
+<span class="cstat-no" title="statement not covered" >        uint8 v;</span>
+        
+        // Use assembly for efficient signature parsing
+        assembly {
+            r := mload(add(signature, 32))
+            s := mload(add(signature, 64))
+            v := byte(0, mload(add(signature, 96)))
+        }
+        
+<span class="cstat-no" title="statement not covered" >        if (v &lt; 27) {</span>
+            v += 27;
+        }
+        
+<span class="cstat-no" title="statement not covered" >        if (v != 27 &amp;&amp; v != 28) {</span>
+            revert InvalidSignatureRecoveryId();
+        }
+        
+<span class="cstat-no" title="statement not covered" >        address recoveredSigner = ecrecover(hash, v, r, s);</span>
+<span class="cstat-no" title="statement not covered" >        return recoveredSigner == expectedSigner &amp;&amp; recoveredSigner != address(0);</span>
+    }
+    
+    /**
+     * @dev Compress transaction data using RLP-like encoding
+     */
+<span class="fstat-no" title="function not covered" >    function compressTransactionData(</span>
+        address[] memory targets,
+        uint256[] memory values,
+        bytes[] memory data
+    )
+        internal
+        pure
+        returns (bytes memory compressed)
+    {
+<span class="cstat-no" title="statement not covered" >        uint256 length = targets.length;</span>
+<span class="cstat-no" title="statement not covered" >        if (length != values.length || values.length != data.length) {</span>
+            revert ArrayLengthMismatch();
+        }
+        
+        // Calculate total size needed
+<span class="cstat-no" title="statement not covered" >        uint256 totalSize = 32;</span> // Length prefix
+<span class="cstat-no" title="statement not covered" >        for (uint256 i = 0; i &lt; length; i++) {</span>
+            totalSize += 20 + 32 + data[i].length + 32; // address + value + data length + data
+        }
+        
+        compressed = new bytes(totalSize);
+        
+        assembly {
+            let compressedPtr := add(compressed, 0x20)
+            mstore(compressedPtr, length) // Store array length
+            compressedPtr := add(compressedPtr, 0x20)
+            
+            let targetsPtr := add(targets, 0x20)
+            let valuesPtr := add(values, 0x20)
+            let dataPtr := add(data, 0x20)
+            
+            for { let i := 0 } lt(i, length) { i := add(i, 1) } {
+                // Store address (20 bytes)
+                let target := mload(add(targetsPtr, mul(i, 0x20)))
+                mstore(compressedPtr, shl(96, target))
+                compressedPtr := add(compressedPtr, 0x14)
+                
+                // Store value (32 bytes)
+                let value := mload(add(valuesPtr, mul(i, 0x20)))
+                mstore(compressedPtr, value)
+                compressedPtr := add(compressedPtr, 0x20)
+                
+                // Store data length and data
+                let dataItem := mload(add(dataPtr, mul(i, 0x20)))
+                let dataLength := mload(dataItem)
+                mstore(compressedPtr, dataLength)
+                compressedPtr := add(compressedPtr, 0x20)
+                
+                // Copy data
+                let dataItemPtr := add(dataItem, 0x20)
+                for { let j := 0 } lt(j, dataLength) { j := add(j, 0x20) } {
+                    mstore(add(compressedPtr, j), mload(add(dataItemPtr, j)))
+                }
+                compressedPtr := add(compressedPtr, dataLength)
+            }
+        }
+    }
+    
+    /**
+     * @dev Decompress transaction data
+     */
+<span class="fstat-no" title="function not covered" >    function decompressTransactionData(bytes memory compressed)</span>
+        internal
+        pure
+        returns (
+            address[] memory targets,
+            uint256[] memory values,
+            bytes[] memory data
+        )
+    {
+        assembly {
+            let compressedPtr := add(compressed, 0x20)
+            let length := mload(compressedPtr)
+            compressedPtr := add(compressedPtr, 0x20)
+            
+            // Allocate arrays
+            targets := mload(0x40)
+            mstore(targets, length)
+            let targetsPtr := add(targets, 0x20)
+            
+            values := add(targets, add(0x20, mul(length, 0x20)))
+            mstore(values, length)
+            let valuesPtr := add(values, 0x20)
+            
+            data := add(values, add(0x20, mul(length, 0x20)))
+            mstore(data, length)
+            let dataPtr := add(data, 0x20)
+            
+            // Update free memory pointer
+            mstore(0x40, add(dataPtr, mul(length, 0x20)))
+            
+            for { let i := 0 } lt(i, length) { i := add(i, 1) } {
+                // Read address (20 bytes, but stored in 32 bytes slot)
+                let target := shr(96, mload(compressedPtr))
+                mstore(add(targetsPtr, mul(i, 0x20)), target)
+                compressedPtr := add(compressedPtr, 0x14)
+                
+                // Read value (32 bytes)
+                let value := mload(compressedPtr)
+                mstore(add(valuesPtr, mul(i, 0x20)), value)
+                compressedPtr := add(compressedPtr, 0x20)
+                
+                // Read data length
+                let dataLength := mload(compressedPtr)
+                compressedPtr := add(compressedPtr, 0x20)
+                
+                // Allocate and store data
+                let dataItem := mload(0x40)
+                mstore(dataItem, dataLength)
+                let dataItemPtr := add(dataItem, 0x20)
+                mstore(0x40, add(dataItemPtr, dataLength))
+                
+                // Copy data
+                for { let j := 0 } lt(j, dataLength) { j := add(j, 0x20) } {
+                    mstore(add(dataItemPtr, j), mload(add(compressedPtr, j)))
+                }
+                compressedPtr := add(compressedPtr, dataLength)
+                
+                // Store data pointer in array
+                mstore(add(dataPtr, mul(i, 0x20)), dataItem)
+            }
+        }
+    }
+    
+    /**
+     * @dev Calculate storage cost in gas
+     */
+<span class="fstat-no" title="function not covered" >    function calculateStorageCost(uint256 dataSize)</span>
+        internal
+        pure
+        returns (uint256)
+    {
+        // SSTORE from zero costs 20,000 gas
+        // SSTORE from non-zero costs 5,000 gas
+        // Assume worst case (from zero)
+<span class="cstat-no" title="statement not covered" >        uint256 slots = (dataSize + 31) / 32;</span> // Round up to nearest slot
+<span class="cstat-no" title="statement not covered" >        return slots * SSTORE_GAS;</span>
+    }
+    
+    /**
+     * @dev Find element in array with early termination
+     */
+<span class="fstat-no" title="function not covered" >    function findInArray(address[] memory array, address target)</span>
+        internal
+        pure
+        returns (bool found, uint256 index)
+    {
+        assembly {
+            let length := mload(array)
+            let arrayPtr := add(array, 0x20)
+            
+            for { let i := 0 } lt(i, length) { i := add(i, 1) } {
+                let element := mload(add(arrayPtr, mul(i, 0x20)))
+                if eq(element, target) {
+                    found := 1
+                    index := i
+                    break
+                }
+            }
+        }
+    }
+    
+    /**
+     * @dev Gas-efficient approval counting
+     */
+<span class="fstat-no" title="function not covered" >    function countApprovals(</span>
+        mapping(address =&gt; bool) storage approvals,
+        address[] memory signers
+    )
+        internal
+        view
+        returns (uint256 count)
+    {
+<span class="cstat-no" title="statement not covered" >        uint256 length = signers.length;</span>
+<span class="cstat-no" title="statement not covered" >        for (uint256 i = 0; i &lt; length;) {</span>
+<span class="cstat-no" title="statement not covered" >            if (approvals[signers[i]]) {</span>
+                count++;
+            }
+            unchecked { ++i; }
+        }
+    }
+    
+    /**
+     * @dev Bitwise operations for efficient flags
+     */
+<span class="fstat-no" title="function not covered" >    function setBit(uint256 bitmap, uint256 index)</span>
+        internal
+        pure
+        returns (uint256)
+    {
+<span class="cstat-no" title="statement not covered" >        return bitmap | (1 &lt;&lt; index);</span>
+    }
+    
+<span class="fstat-no" title="function not covered" >    function clearBit(uint256 bitmap, uint256 index)</span>
+        internal
+        pure
+        returns (uint256)
+    {
+<span class="cstat-no" title="statement not covered" >        return bitmap &amp; ~(1 &lt;&lt; index);</span>
+    }
+    
+<span class="fstat-no" title="function not covered" >    function getBit(uint256 bitmap, uint256 index)</span>
+        internal
+        pure
+        returns (bool)
+    {
+<span class="cstat-no" title="statement not covered" >        return (bitmap &amp; (1 &lt;&lt; index)) != 0;</span>
+    }
+    
+<span class="fstat-no" title="function not covered" >    function countSetBits(uint256 bitmap)</span>
+        internal
+        pure
+        returns (uint256 count)
+    {
+        // Brian Kernighan's algorithm
+<span class="cstat-no" title="statement not covered" >        while (bitmap != 0) {</span>
+            bitmap &amp;= bitmap - 1;
+            count++;
+        }
+    }
+    
+    /**
+     * @dev Calculate percentage with precision (gas optimized)
+     */
+<span class="fstat-no" title="function not covered" >    function calculatePercentage(</span>
+        uint256 numerator,
+        uint256 denominator,
+        uint256 precision
+    )
+        internal
+        pure
+        returns (uint256 result)
+    {
+<span class="cstat-no" title="statement not covered" >        if (denominator == 0) {</span>
+            revert DivisionByZero();
+        }
+        
+        // Fixed the assembly block
+        result = (numerator * (10 ** precision)) / denominator;
+    }
+    
+    /**
+     * @dev Efficient batch transfer encoding
+     */
+<span class="fstat-no" title="function not covered" >    function optimizedBatchTransfer(</span>
+        address[] memory recipients,
+        uint256[] memory amounts
+    )
+        internal
+        pure
+        returns (bytes memory callData)
+    {
+<span class="cstat-no" title="statement not covered" >        if (recipients.length != amounts.length) {</span>
+            revert ArrayLengthMismatch();
+        }
+        
+        // Create optimized call data for batch transfers
+        callData = abi.encodeWithSelector(
+            bytes4(keccak256("batchTransfer(address[],uint256[])")),
+            recipients,
+            amounts
+        );
+    }
+    
+    /**
+     * @dev Process arrays in chunks for gas efficiency
+     */
+<span class="fstat-no" title="function not covered" >    function processInChunks(</span>
+        address[] memory array,
+        uint256 chunkSize
+    )
+        internal
+        pure
+        returns (uint256 totalChunks)
+    {
+<span class="cstat-no" title="statement not covered" >        if (chunkSize == 0) {</span>
+            revert InvalidChunkSize();
+        }
+        totalChunks = (array.length + chunkSize - 1) / chunkSize;
+    }
+    
+    /**
+     * @dev Efficient hash calculation for arrays - FIXED VERSION
+     */
+<span class="fstat-no" title="function not covered" >    function efficientHash(</span>
+        address[] memory addresses,
+        uint256[] memory values
+    )
+        internal
+        pure
+        returns (bytes32)
+    {
+<span class="cstat-no" title="statement not covered" >        if (addresses.length != values.length) {</span>
+            revert ArrayLengthMismatch();
+        }
+        
+        // Fixed implementation using abi.encodePacked outside assembly
+<span class="cstat-no" title="statement not covered" >        return keccak256(abi.encodePacked(</span>
+            keccak256(abi.encodePacked(addresses)),
+            keccak256(abi.encodePacked(values))
+        ));
+    }
+    
+    /**
+     * @dev Calculate voting power with quorum
+     */
+<span class="fstat-no" title="function not covered" >    function calculateVotingPower(</span>
+        uint256 yesVotes,
+        uint256 noVotes,
+        uint256 totalSigners,
+        uint256 quorumPercentage
+    )
+        internal
+        pure
+        returns (bool hasQuorum, bool isPassing, uint256 participationRate)
+    {
+<span class="cstat-no" title="statement not covered" >        uint256 totalVotes = yesVotes + noVotes;</span>
+        participationRate = (totalVotes * 10000) / totalSigners; // Basis points
+        
+        hasQuorum = participationRate &gt;= quorumPercentage;
+        isPassing = yesVotes &gt; noVotes;
+    }
+    
+    /**
+     * @dev Optimize struct packing checker
+     */
+<span class="fstat-no" title="function not covered" >    function checkStructPacking(</span>
+        uint256 value1,
+        uint256 value2,
+        bool flag
+    )
+        internal
+        pure
+        returns (bytes32 packed)
+    {
+        // Pack three values into single storage slot
+        assembly {
+            packed := or(
+                or(
+                    and(value1, 0xffffffffffffffffffffffffffffffff), // 128 bits
+                    shl(128, and(value2, 0xffffffffffffffffffffffffffffff)) // 120 bits
+                ),
+                shl(248, flag) // 1 bit
+            )
+        }
+    }
+    
+    /**
+     * @dev Unpack struct data
+     */
+<span class="fstat-no" title="function not covered" >    function unpackStructData(bytes32 packed)</span>
+        internal
+        pure
+        returns (uint256 value1, uint256 value2, bool flag)
+    {
+        assembly {
+            value1 := and(packed, 0xffffffffffffffffffffffffffffffff)
+            value2 := and(shr(128, packed), 0xffffffffffffffffffffffffffffff)
+            flag := gt(and(shr(248, packed), 0xff), 0)
+        }
+    }
+    
+    /**
+     * @dev Memory-efficient array comparison
+     */
+<span class="fstat-no" title="function not covered" >    function compareArrays(</span>
+        address[] memory array1,
+        address[] memory array2
+    )
+        internal
+        pure
+        returns (bool isEqual)
+    {
+<span class="cstat-no" title="statement not covered" >        if (array1.length != array2.length) {</span>
+<span class="cstat-no" title="statement not covered" >            return false;</span>
+        }
+        
+        assembly {
+            let length := mload(array1)
+            let array1Ptr := add(array1, 0x20)
+            let array2Ptr := add(array2, 0x20)
+            
+            isEqual := 1
+            for { let i := 0 } lt(i, length) { i := add(i, 1) } {
+                if iszero(eq(mload(add(array1Ptr, mul(i, 0x20))), mload(add(array2Ptr, mul(i, 0x20))))) {
+                    isEqual := 0
+                    break
+                }
+            }
+        }
+    }
+    
+    /**
+     * @dev Calculate time-weighted voting power
+     */
+<span class="fstat-no" title="function not covered" >    function calculateTimeWeightedVote(</span>
+        uint256 voteTime,
+        uint256 proposalStart,
+        uint256 proposalEnd,
+        uint256 baseWeight
+    )
+        internal
+        pure
+        returns (uint256 weightedPower)
+    {
+<span class="cstat-no" title="statement not covered" >        if (voteTime &lt; proposalStart || voteTime &gt; proposalEnd) {</span>
+<span class="cstat-no" title="statement not covered" >            return 0;</span>
+        }
+        
+<span class="cstat-no" title="statement not covered" >        uint256 totalDuration = proposalEnd - proposalStart;</span>
+<span class="cstat-no" title="statement not covered" >        uint256 timeElapsed = voteTime - proposalStart;</span>
+        
+        // Early voters get more weight
+<span class="cstat-no" title="statement not covered" >        uint256 timeBonus = ((totalDuration - timeElapsed) * 100) / totalDuration;</span>
+        weightedPower = baseWeight + (baseWeight * timeBonus) / 100;
+    }
+    
+    /**
+     * @dev Efficient merkle proof verification
+     */
+<span class="fstat-no" title="function not covered" >    function verifyMerkleProof(</span>
+        bytes32[] memory proof,
+        bytes32 root,
+        bytes32 leaf
+    )
+        internal
+        pure
+        returns (bool)
+    {
+<span class="cstat-no" title="statement not covered" >        bytes32 computedHash = leaf;</span>
+        
+<span class="cstat-no" title="statement not covered" >        for (uint256 i = 0; i &lt; proof.length; i++) {</span>
+<span class="cstat-no" title="statement not covered" >            bytes32 proofElement = proof[i];</span>
+            
+<span class="cstat-no" title="statement not covered" >            if (computedHash &lt;= proofElement) {</span>
+                // Hash(current computed hash + current element of the proof)
+                computedHash = keccak256(abi.encodePacked(computedHash, proofElement));
+            } else {
+                // Hash(current element of the proof + current computed hash)
+                computedHash = keccak256(abi.encodePacked(proofElement, computedHash));
+            }
+        }
+        
+<span class="cstat-no" title="statement not covered" >        return computedHash == root;</span>
+    }
+}</pre></td></tr>
+</table></pre>
+<div class='push'></div><!-- for sticky footer -->
+</div><!-- /wrapper -->
+<div class='footer quiet pad2 space-top1 center small'>
+  Code coverage
+  generated by <a href="http://istanbul-js.org/" target="_blank">istanbul</a> at Mon Aug 11 2025 18:59:39 GMT+0700 (Western Indonesia Time)
+</div>
+</div>
+<script src="../prettify.js"></script>
+<script>
+window.onload = function () {
+        if (typeof prettyPrint === 'function') {
+            prettyPrint();
+        }
+};
+</script>
+<script src="../sorter.js"></script>
+</body>
+</html>
