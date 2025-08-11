@@ -1,6 +1,6 @@
-// file frontend/components/CreateTransaction.js
+// file frontend/components/CreateTransaction.js - COMPLETE VERSION with Wagmi v2 hooks
 import { useState, useEffect } from 'react'
-import { useContractWrite, useWaitForTransaction, useAccount } from 'wagmi'
+import { useWriteContract, useWaitForTransactionReceipt, useAccount } from 'wagmi'
 import { parseEther, formatEther } from 'viem'
 import { 
   PlusIcon, 
@@ -63,30 +63,28 @@ export default function CreateTransaction({ contractAddress, isSigner }) {
   const [showAdvanced, setShowAdvanced] = useState(false)
   const [presetTemplate, setPresetTemplate] = useState('')
 
-  // Contract write hooks
+  // Contract write hooks - Updated for Wagmi v2
   const { 
-    data: submitData, 
-    write: submitTransaction, 
-    isLoading: isSubmitLoading 
-  } = useContractWrite({
-    address: contractAddress,
-    abi: CONTRACT_ABI,
-    functionName: 'submitTransaction',
-  })
+    data: submitTxHash, 
+    writeContract: submitTransaction, 
+    isPending: isSubmitLoading,
+    error: submitError
+  } = useWriteContract()
 
   const { 
-    data: batchSubmitData, 
-    write: submitBatchTransactions, 
-    isLoading: isBatchSubmitLoading 
-  } = useContractWrite({
-    address: contractAddress,
-    abi: CONTRACT_ABI,
-    functionName: 'submitBatchTransactions',
-  })
+    data: batchSubmitTxHash, 
+    writeContract: submitBatchTransactions, 
+    isPending: isBatchSubmitLoading,
+    error: batchSubmitError
+  } = useWriteContract()
 
-  // Wait for transaction
-  const { isLoading: isWaitingForTx, isSuccess } = useWaitForTransaction({
-    hash: submitData?.hash || batchSubmitData?.hash,
+  // Wait for transaction - Updated for Wagmi v2
+  const { 
+    isLoading: isWaitingForTx, 
+    isSuccess,
+    error: receiptError
+  } = useWaitForTransactionReceipt({
+    hash: submitTxHash || batchSubmitTxHash,
   })
 
   // Preset templates untuk transaksi umum
@@ -199,7 +197,7 @@ export default function CreateTransaction({ contractAddress, isSigner }) {
     setPresetTemplate(templateKey)
   }
 
-  // Handle submit single transaction
+  // Handle submit single transaction - Updated for Wagmi v2
   const handleSubmit = async (e) => {
     e.preventDefault()
     
@@ -221,17 +219,20 @@ export default function CreateTransaction({ contractAddress, isSigner }) {
       const value = parseEther(formData.value)
       
       await submitTransaction({
+        address: contractAddress,
+        abi: CONTRACT_ABI,
+        functionName: 'submitTransaction',
         args: [formData.to, value, formData.data, deadline]
       })
     } catch (error) {
       console.error('Error submitting transaction:', error)
-      alert('Gagal mengirim transaksi: ' + error.message)
+      alert('Gagal mengirim transaksi: ' + (error?.message || 'Unknown error'))
     } finally {
       setIsSubmitting(false)
     }
   }
 
-  // Handle submit batch transactions
+  // Handle submit batch transactions - Updated for Wagmi v2
   const handleBatchSubmit = async (e) => {
     e.preventDefault()
     
@@ -264,11 +265,14 @@ export default function CreateTransaction({ contractAddress, isSigner }) {
       const deadlines = batchTransactions.map(tx => Math.floor(new Date(tx.deadline).getTime() / 1000))
       
       await submitBatchTransactions({
+        address: contractAddress,
+        abi: CONTRACT_ABI,
+        functionName: 'submitBatchTransactions',
         args: [targets, values, dataArray, deadlines]
       })
     } catch (error) {
       console.error('Error submitting batch transactions:', error)
-      alert('Gagal mengirim batch transaksi: ' + error.message)
+      alert('Gagal mengirim batch transaksi: ' + (error?.message || 'Unknown error'))
     } finally {
       setIsSubmitting(false)
     }
@@ -301,6 +305,15 @@ export default function CreateTransaction({ contractAddress, isSigner }) {
       deadline: defaultDeadline.toISOString().slice(0, 16)
     }))
   }, [])
+
+  // Handle errors
+  useEffect(() => {
+    if (submitError || batchSubmitError || receiptError) {
+      const error = submitError || batchSubmitError || receiptError
+      console.error('Transaction error:', error)
+      alert('Error: ' + (error?.message || 'Transaction failed'))
+    }
+  }, [submitError, batchSubmitError, receiptError])
 
   if (!isSigner) {
     return (

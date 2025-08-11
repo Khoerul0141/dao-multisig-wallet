@@ -1,4 +1,4 @@
-// file frontend/pages/index.js
+// file frontend/pages/index.js - FIXED VERSION with Wagmi v2 hooks
 import { useState, useEffect } from 'react'
 import { ConnectButton } from '@rainbow-me/rainbowkit'
 import { useAccount, useReadContract, useWriteContract, useWaitForTransactionReceipt } from 'wagmi'
@@ -116,90 +116,97 @@ export default function Home() {
     process.env.NEXT_PUBLIC_CONTRACT_ADDRESS || DEFAULT_CONTRACT_ADDRESS
   )
   const [isValidAddress, setIsValidAddress] = useState(true)
-  const [loadingState, setLoadingState] = useState({
-    signers: false,
-    config: false,
-    transactions: false
-  })
 
   const { address, isConnected, isConnecting, isDisconnected } = useAccount()
 
-  // Contract reads dengan error handling
+  // Contract reads dengan Wagmi v2 - useReadContract
   const { 
     data: signers, 
-    isError: signersError, 
+    error: signersError, 
     isLoading: signersLoading,
     refetch: refetchSigners 
-  } = useContractRead({
+  } = useReadContract({
     address: contractAddress,
     abi: CONTRACT_ABI,
     functionName: 'getSigners',
-    enabled: isConnected && isValidAddress,
-    onError: (error) => {
-      console.error('Error fetching signers:', error)
+    query: {
+      enabled: isConnected && isValidAddress,
+      refetchInterval: 30000, // Auto-refresh every 30 seconds
     }
   })
 
   const { 
     data: requiredSignatures, 
-    isError: requiredError,
+    error: requiredError,
     isLoading: requiredLoading 
-  } = useContractRead({
+  } = useReadContract({
     address: contractAddress,
     abi: CONTRACT_ABI,
     functionName: 'getRequiredSignatures',
-    enabled: isConnected && isValidAddress,
+    query: {
+      enabled: isConnected && isValidAddress,
+    }
   })
 
   const { 
     data: transactionCount, 
-    isError: transactionCountError,
+    error: transactionCountError,
     isLoading: transactionCountLoading,
     refetch: refetchTransactionCount 
-  } = useContractRead({
+  } = useReadContract({
     address: contractAddress,
     abi: CONTRACT_ABI,
     functionName: 'transactionCount',
-    enabled: isConnected && isValidAddress,
+    query: {
+      enabled: isConnected && isValidAddress,
+    }
   })
 
   const { 
     data: isSigner, 
-    isError: isSignerError,
+    error: isSignerError,
     isLoading: isSignerLoading 
-  } = useContractRead({
+  } = useReadContract({
     address: contractAddress,
     abi: CONTRACT_ABI,
     functionName: 'isSigner',
     args: [address],
-    enabled: isConnected && address && isValidAddress,
+    query: {
+      enabled: isConnected && address && isValidAddress,
+    }
   })
 
   const { 
     data: isPaused 
-  } = useContractRead({
+  } = useReadContract({
     address: contractAddress,
     abi: CONTRACT_ABI,
     functionName: 'isPaused',
-    enabled: isConnected && isValidAddress,
+    query: {
+      enabled: isConnected && isValidAddress,
+    }
   })
 
   const { 
     data: proposalDuration 
-  } = useContractRead({
+  } = useReadContract({
     address: contractAddress,
     abi: CONTRACT_ABI,
     functionName: 'getProposalDuration',
-    enabled: isConnected && isValidAddress,
+    query: {
+      enabled: isConnected && isValidAddress,
+    }
   })
 
   const { 
     data: executionDelay 
-  } = useContractRead({
+  } = useReadContract({
     address: contractAddress,
     abi: CONTRACT_ABI,
     functionName: 'executionDelay',
-    enabled: isConnected && isValidAddress,
+    query: {
+      enabled: isConnected && isValidAddress,
+    }
   })
 
   // Validate contract address
