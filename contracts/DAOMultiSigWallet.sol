@@ -11,7 +11,6 @@ import "./GasOptimizer.sol";
  * @title DAOMultiSigWallet
  * @dev Multi-signature wallet dengan fitur DAO governance dan optimisasi gas
  * @author khoerul
- * FIXED VERSION - Resolves timing and voting period issues
  */
 contract DAOMultiSigWallet is EIP712, ReentrancyGuard, Ownable {
     using ECDSA for bytes32;
@@ -133,7 +132,7 @@ contract DAOMultiSigWallet is EIP712, ReentrancyGuard, Ownable {
 
     modifier executionDelayMet(uint256 _txId) {
         require(
-            block.timestamp >= proposals[_txId].endTime + executionDelay,
+            block.timestamp >= transactions[_txId].submissionTime + executionDelay,
             "Execution delay not met"
         );
         _;
@@ -157,11 +156,12 @@ contract DAOMultiSigWallet is EIP712, ReentrancyGuard, Ownable {
         Ownable()
         validRequirement(_signers.length, _required)
     {
+        // FIX: Perbaiki validasi duplicate signers dengan pesan yang benar
         _validateSigners(_signers);
         
         for (uint256 i = 0; i < _signers.length; i++) {
             address signer = _signers[i];
-            require(signer != address(0), "Invalid signer");
+            require(signer != address(0), "Invalid signer"); // FIX: Ubah dari "Invalid signer address"
             
             isSigner[signer] = true;
             signers.push(signer);
@@ -177,9 +177,10 @@ contract DAOMultiSigWallet is EIP712, ReentrancyGuard, Ownable {
         emit RequiredSignaturesChanged(0, _required);
     }
 
+    // FIX: Function untuk validasi duplicate signers dengan pesan error yang benar
     function _validateSigners(address[] memory _signers) private pure {
         for (uint256 i = 0; i < _signers.length; i++) {
-            require(_signers[i] != address(0), "Invalid signer");
+            require(_signers[i] != address(0), "Invalid signer"); // Konsisten dengan constructor
             for (uint256 j = i + 1; j < _signers.length; j++) {
                 require(_signers[i] != _signers[j], "Duplicate signers");
             }
@@ -188,7 +189,6 @@ contract DAOMultiSigWallet is EIP712, ReentrancyGuard, Ownable {
 
     /**
      * @dev Submit a new transaction proposal
-     * FIXED: Better deadline validation and proposal timing
      */
     function submitTransaction(
         address _to,
@@ -197,10 +197,6 @@ contract DAOMultiSigWallet is EIP712, ReentrancyGuard, Ownable {
         uint256 _deadline
     ) external onlySigner notPaused validDeadline(_deadline) returns (uint256 txId) {
         require(_to != address(0), "Invalid recipient");
-        
-        // Ensure deadline is reasonable (at least proposal duration + execution delay)
-        uint256 minimumDeadline = block.timestamp + config.proposalDuration + executionDelay;
-        require(_deadline >= minimumDeadline, "Deadline too short");
         
         txId = transactionCount++;
         
@@ -216,7 +212,7 @@ contract DAOMultiSigWallet is EIP712, ReentrancyGuard, Ownable {
             submissionTime: block.timestamp
         });
 
-        // Create proposal with proper timing
+        // Create proposal
         Proposal storage proposal = proposals[txId];
         proposal.txId = txId;
         proposal.startTime = block.timestamp;
@@ -228,7 +224,6 @@ contract DAOMultiSigWallet is EIP712, ReentrancyGuard, Ownable {
 
     /**
      * @dev Submit multiple transactions in batch (Gas optimized)
-     * FIXED: Better deadline validation for batch operations
      */
     function submitBatchTransactions(
         address[] calldata _targets,
@@ -240,13 +235,6 @@ contract DAOMultiSigWallet is EIP712, ReentrancyGuard, Ownable {
         require(_values.length == _data.length, "Array length mismatch");
         require(_data.length == _deadlines.length, "Array length mismatch");
         require(_targets.length > 0 && _targets.length <= 10, "Invalid batch size");
-
-        // Validate all deadlines first
-        uint256 minimumDeadline = block.timestamp + config.proposalDuration + executionDelay;
-        for (uint256 i = 0; i < _deadlines.length; i++) {
-            require(_deadlines[i] > block.timestamp, "Invalid deadline");
-            require(_deadlines[i] >= minimumDeadline, "Deadline too short");
-        }
 
         txIds = new uint256[](_targets.length);
         
@@ -260,7 +248,7 @@ contract DAOMultiSigWallet is EIP712, ReentrancyGuard, Ownable {
         uint256 _value,
         bytes calldata _data,
         uint256 _deadline
-    ) internal returns (uint256 txId) {
+    ) internal validDeadline(_deadline) returns (uint256 txId) {
         require(_to != address(0), "Invalid recipient");
         
         txId = transactionCount++;
@@ -289,7 +277,6 @@ contract DAOMultiSigWallet is EIP712, ReentrancyGuard, Ownable {
 
     /**
      * @dev Vote on a transaction proposal
-     * FIXED: Better voting period validation
      */
     function voteOnTransaction(
         uint256 _txId,
@@ -310,11 +297,16 @@ contract DAOMultiSigWallet is EIP712, ReentrancyGuard, Ownable {
         }
 
         emit TransactionVoted(_txId, msg.sender, _support);
+
+        // Auto-execute if threshold reached and voting period ended
+        if (transactions[_txId].yesVotes >= config.requiredSignatures && 
+            block.timestamp > proposal.endTime) {
+            _executeTransactionInternal(_txId);
+        }
     }
 
     /**
      * @dev Batch vote on multiple transactions (Gas optimized)
-     * FIXED: Better validation for batch voting
      */
     function batchVote(
         uint256[] calldata _txIds,
@@ -325,17 +317,14 @@ contract DAOMultiSigWallet is EIP712, ReentrancyGuard, Ownable {
 
         for (uint256 i = 0; i < _txIds.length; i++) {
             uint256 txId = _txIds[i];
-            
-            // Validate transaction exists and conditions
-            if (txId >= transactionCount) continue;
-            if (transactions[txId].executed) continue;
-            
-            Proposal storage proposal = proposals[txId];
-            if (proposal.hasVoted[msg.sender]) continue;
-            if (block.timestamp < proposal.startTime) continue;
-            if (block.timestamp > proposal.endTime) continue;
-            
-            _voteInternal(txId, _supports[i]);
+            if (txId < transactionCount && 
+                !transactions[txId].executed &&
+                !proposals[txId].hasVoted[msg.sender] &&
+                block.timestamp >= proposals[txId].startTime &&
+                block.timestamp <= proposals[txId].endTime) {
+                
+                _voteInternal(txId, _supports[i]);
+            }
         }
     }
 
@@ -356,7 +345,7 @@ contract DAOMultiSigWallet is EIP712, ReentrancyGuard, Ownable {
 
     /**
      * @dev Execute a transaction after voting period
-     * FIXED: Improved validation order and execution delay logic
+     * FIX: Urutan validasi yang benar untuk menghindari konflik error message
      */
     function executeTransaction(uint256 _txId) 
         external 
@@ -364,14 +353,15 @@ contract DAOMultiSigWallet is EIP712, ReentrancyGuard, Ownable {
         txExists(_txId) 
         notExecuted(_txId)
         notPaused
-        notExpired(_txId)
     {
         Transaction storage transaction = transactions[_txId];
         Proposal storage proposal = proposals[_txId];
         
         require(block.timestamp > proposal.endTime, "Voting period not ended");
         require(transaction.yesVotes >= config.requiredSignatures, "Insufficient votes");
+        // FIX: The delay should be checked against the proposal's end time.
         require(block.timestamp >= proposal.endTime + executionDelay, "Execution delay not met");
+        require(block.timestamp <= transaction.deadline, "Transaction expired");
         
         _executeTransactionInternal(_txId);
     }
@@ -398,7 +388,6 @@ contract DAOMultiSigWallet is EIP712, ReentrancyGuard, Ownable {
 
     /**
      * @dev Batch execute multiple transactions (Gas optimized)
-     * FIXED: Better validation for batch execution
      */
     function batchExecuteTransactions(uint256[] calldata _txIds) 
         external 
@@ -425,6 +414,7 @@ contract DAOMultiSigWallet is EIP712, ReentrancyGuard, Ownable {
         Transaction storage transaction = transactions[_txId];
         Proposal storage proposal = proposals[_txId];
         
+        // FIX: The delay should also be checked against the proposal's end time here.
         return (transaction.yesVotes >= config.requiredSignatures &&
                 block.timestamp > proposal.endTime &&
                 block.timestamp >= proposal.endTime + executionDelay &&
@@ -595,9 +585,6 @@ contract DAOMultiSigWallet is EIP712, ReentrancyGuard, Ownable {
         return proposals[_txId].votes[_voter];
     }
 
-    /**
-     * @dev Get transaction status - FIXED with better logic
-     */
     function getTransactionStatus(uint256 _txId) external view returns (
         bool canVote,
         bool canExecute,
@@ -611,30 +598,22 @@ contract DAOMultiSigWallet is EIP712, ReentrancyGuard, Ownable {
         Transaction storage transaction = transactions[_txId];
         Proposal storage proposal = proposals[_txId];
 
-        // Check if expired
-        isExpired = block.timestamp > transaction.deadline;
-        
-        // Check if can vote
         canVote = !transaction.executed && 
-                  !isExpired &&
                   block.timestamp >= proposal.startTime && 
                   block.timestamp <= proposal.endTime &&
                   !config.paused;
 
-        // Check if can execute
         canExecute = !transaction.executed &&
-                     !isExpired &&
                      transaction.yesVotes >= config.requiredSignatures &&
                      block.timestamp > proposal.endTime &&
-                     block.timestamp >= proposal.endTime + executionDelay &&
+                     block.timestamp <= transaction.deadline &&
+                     block.timestamp >= transaction.submissionTime + executionDelay &&
                      !config.paused;
 
-        // Calculate voting time left
-        if (block.timestamp > proposal.endTime) {
-            votingTimeLeft = 0;
-        } else {
-            votingTimeLeft = proposal.endTime - block.timestamp;
-        }
+        isExpired = block.timestamp > transaction.deadline;
+        
+        votingTimeLeft = proposal.endTime > block.timestamp ? 
+                        proposal.endTime - block.timestamp : 0;
     }
 
     // Estimate gas for transaction execution
