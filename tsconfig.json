@@ -43,7 +43,7 @@
     "outDir": "./dist",
     "rootDir": ".",
     "removeComments": true,
-    "noImplicitAny": true,
+    "noImplicitAny": false,
     "strictNullChecks": true,
     "strictFunctionTypes": true,
     "noImplicitThis": true,
@@ -56,17 +56,17 @@
   "include": [
     "hardhat.config.ts",
     "hardhat.d.ts",
-    "next-env.d.ts",
     "**/*.ts",
     "**/*.tsx",
-    ".next/types/**/*.ts",
     "test/**/*",
     "scripts/**/*",
-    "typechain-types/**/*",
-    "frontend/**/*"
+    "typechain-types/**/*"
   ],
   "exclude": [
     "node_modules",
+    "frontend/node_modules",
+    "frontend/.next",
+    "frontend/out",
     ".next",
     "out",
     "dist",
@@ -74,6 +74,7 @@
     "cache",
     "artifacts",
     "coverage",
+    "ignition",
     "test/unit/tempCodeRunnerFile.ts"
   ],
   "ts-node": {

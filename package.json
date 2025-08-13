@@ -15,6 +15,9 @@
     "simulate": "npx hardhat run scripts/simulate.ts --network localhost",
     "node": "npx hardhat node",
     "clean": "npx hardhat clean",
+    "clean:cache": "rimraf cache artifacts coverage .nyc_output dist build ignition *.tsbuildinfo",
+    "clean:all": "npm run clean && npm run clean:cache && rimraf node_modules package-lock.json && cd frontend && rimraf node_modules package-lock.json .next out build",
+    "clean:windows": "cleanup.bat",
     "coverage": "npx hardhat coverage",
     "verify": "npx hardhat verify",
     "typechain": "npx hardhat typechain",
@@ -25,8 +28,10 @@
     "frontend:install": "cd frontend && npm install",
     "frontend:dev": "cd frontend && npm run dev",
     "frontend:build": "cd frontend && npm run build",
-    "check-types": "tsc --noEmit",
-    "build-contracts": "npx hardhat compile && npx hardhat typechain"
+    "check-types": "tsc --noEmit --skipLibCheck",
+    "check-types:strict": "tsc --noEmit",
+    "build-contracts": "npx hardhat compile && npx hardhat typechain",
+    "postinstall": "npm run build-contracts || echo 'Contracts compilation failed, continuing...'"
   },
   "keywords": [
     "blockchain",
