@@ -3,16 +3,14 @@ const nextConfig = {
   reactStrictMode: true,
   swcMinify: true,
   
-  // Disable SSR for client-only components to prevent hydration issues
+  // FIXED: Disable SSR for client-only components to prevent hydration issues
   experimental: {
     esmExternals: false,
-    // Remove optimizeCss for now
-    // optimizeCss: true,
   },
 
-  // Webpack configuration untuk Web3 libraries
+  // FIXED: Webpack configuration untuk Web3 libraries
   webpack: (config, { buildId, dev, isServer, defaultLoaders, webpack }) => {
-    // Polyfill untuk Node.js modules
+    // FIXED: Polyfill untuk Node.js modules
     config.resolve.fallback = {
       ...config.resolve.fallback,
       fs: false,
@@ -26,9 +24,19 @@ const nextConfig = {
       https: false,
       zlib: false,
       url: false,
+      util: false,
+      buffer: require.resolve('buffer'),
     }
 
-    // Optimasi untuk Web3 libraries
+    // FIXED: Provide global Buffer polyfill
+    config.plugins.push(
+      new webpack.ProvidePlugin({
+        Buffer: ['buffer', 'Buffer'],
+        process: 'process/browser',
+      })
+    )
+
+    // FIXED: Optimasi untuk Web3 libraries
     config.module.rules.push({
       test: /\.m?js$/,
       resolve: {
@@ -36,18 +44,20 @@ const nextConfig = {
       },
     })
 
-    // Ignore warnings untuk Web3 dependencies
+    // FIXED: Ignore warnings untuk Web3 dependencies
     config.ignoreWarnings = [
       /Failed to parse source map/,
       /Critical dependency: the request of a dependency is an expression/,
+      /Module not found: Can't resolve/,
     ]
 
-    // Fix for RainbowKit SSR issues
+    // FIXED: Handle ESM modules properly
+    config.externals = config.externals || []
     if (!isServer) {
-      config.resolve.fallback = {
-        ...config.resolve.fallback,
-        encoding: false,
-      }
+      config.externals.push({
+        'utf-8-validate': 'commonjs utf-8-validate',
+        'bufferutil': 'commonjs bufferutil',
+      })
     }
 
     return config
@@ -60,7 +70,7 @@ const nextConfig = {
     NEXT_PUBLIC_CONTRACT_ADDRESS: process.env.NEXT_PUBLIC_CONTRACT_ADDRESS,
   },
 
-  // Images configuration
+  // FIXED: Images configuration
   images: {
     domains: [
       'localhost',
@@ -72,10 +82,10 @@ const nextConfig = {
     contentSecurityPolicy: "default-src 'self'; script-src 'none'; sandbox;",
   },
 
-  // Disable CSS optimization that causes critters issue
+  // FIXED: Disable problematic optimizations
   optimizeFonts: false,
   
-  // Output configuration
+  // FIXED: Output configuration
   output: 'standalone',
   
   // Compression
@@ -84,8 +94,28 @@ const nextConfig = {
   // Generate ETags
   generateEtags: true,
 
-  // Fix for SSR hydration issues with crypto-related libraries
-  transpilePackages: ['@rainbow-me/rainbowkit'],
+  // FIXED: Transpile packages that cause issues
+  transpilePackages: [
+    '@rainbow-me/rainbowkit',
+    'wagmi',
+    'viem',
+    '@tanstack/react-query'
+  ],
+
+  // FIXED: Additional configuration for better Web3 support
+  async headers() {
+    return [
+      {
+        source: '/(.*)',
+        headers: [
+          {
+            key: 'Cross-Origin-Embedder-Policy',
+            value: 'credentialless',
+          },
+        ],
+      },
+    ]
+  },
 }
 
 module.exports = nextConfig

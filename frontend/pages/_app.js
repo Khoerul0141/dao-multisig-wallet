@@ -1,15 +1,14 @@
-// frontend/pages/_app.js - FIXED VERSION - SSR Compatible with proper provider setup
+// frontend/pages/_app.js - FIXED VERSION - Proper Provider Order
 import '../styles/globals.css'
 import '@rainbow-me/rainbowkit/styles.css'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import {
   getDefaultWallets,
   RainbowKitProvider,
   darkTheme,
 } from '@rainbow-me/rainbowkit'
-import { WagmiProvider, createConfig } from 'wagmi'
+import { WagmiProvider, createConfig, http } from 'wagmi'
 import { mainnet, sepolia, hardhat, localhost } from 'wagmi/chains'
-import { http } from 'viem'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 
 // Configure chains
@@ -30,27 +29,29 @@ const config = createConfig({
     [hardhat.id]: http('http://127.0.0.1:8545'),
     [localhost.id]: http('http://127.0.0.1:8545'),
   },
-  ssr: true, // Enable SSR support
+  ssr: false, // FIXED: Disable SSR to prevent hydration issues
 })
 
 // Configure wallet connectors
 const { connectors } = getDefaultWallets({
   appName: 'DAO MultiSig Wallet',
-  projectId: process.env.NEXT_PUBLIC_WALLET_CONNECT_PROJECT_ID || 'demo',
-  chains, // Use the chains array directly
+  projectId: process.env.NEXT_PUBLIC_WALLET_CONNECT_PROJECT_ID || 'demo-project-id',
+  chains,
 })
 
 function MyApp({ Component, pageProps }) {
-  // Create QueryClient inside component to avoid SSR hydration issues
+  // FIXED: Create QueryClient inside component with proper configuration
   const [queryClient] = useState(() => new QueryClient({
     defaultOptions: {
       queries: {
         staleTime: 1000 * 60 * 5, // 5 minutes
-        gcTime: 1000 * 60 * 10, // 10 minutes (renamed from cacheTime)
-        retry: 3,
-        retryDelay: attemptIndex => Math.min(1000 * 2 ** attemptIndex, 30000),
-        // Disable SSR queries to prevent hydration mismatches
+        gcTime: 1000 * 60 * 10, // 10 minutes
+        retry: 1, // FIXED: Reduced retry to prevent infinite loops
+        retryDelay: 1000,
+        // FIXED: Disable SSR queries to prevent hydration mismatches
         refetchOnWindowFocus: false,
+        refetchOnMount: false,
+        refetchOnReconnect: false,
       },
       mutations: {
         retry: 1,
@@ -58,8 +59,35 @@ function MyApp({ Component, pageProps }) {
     },
   }))
 
+  // FIXED: Add client-side only rendering
+  const [mounted, setMounted] = useState(false)
+  
+  useEffect(() => {
+    setMounted(true)
+  }, [])
+
+  // FIXED: Prevent SSR rendering to avoid hydration issues
+  if (!mounted) {
+    return (
+      <div style={{
+        display: 'flex',
+        justifyContent: 'center',
+        alignItems: 'center',
+        height: '100vh',
+        background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+        color: 'white',
+        fontSize: '18px'
+      }}>
+        <div style={{ textAlign: 'center' }}>
+          <div style={{ marginBottom: '20px', fontSize: '24px' }}>🔄</div>
+          <div>Loading DAO MultiSig Wallet...</div>
+        </div>
+      </div>
+    )
+  }
+
   return (
-    // CORRECT ORDER: QueryClientProvider MUST be outermost
+    // FIXED: Correct provider order - QueryClient MUST be outermost
     <QueryClientProvider client={queryClient}>
       <WagmiProvider config={config}>
         <RainbowKitProvider
@@ -77,8 +105,7 @@ function MyApp({ Component, pageProps }) {
           }}
           showRecentTransactions={true}
           modalSize="compact"
-          // Add SSR configuration to prevent hydration issues
-          initialChain={hardhat}
+          // FIXED: Remove initialChain to prevent SSR issues
         >
           <Component {...pageProps} />
         </RainbowKitProvider>

@@ -109,7 +109,7 @@ const CONTRACT_ABI = [
 ]
 
 // Default contract address - Updated dari hasil simulasi terbaru
-const DEFAULT_CONTRACT_ADDRESS = '0xE2307e3710d108ceC7a4722a020a050681c835b3'
+const DEFAULT_CONTRACT_ADDRESS = '0x8b9d5A75328b5F3167b04B42AD00092E7d6c485c'
 
 export default function Home() {
   const [activeTab, setActiveTab] = useState('overview')
