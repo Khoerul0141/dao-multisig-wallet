@@ -1,8 +1,9 @@
-// file frontend/pages/index.js - FIXED VERSION with Wagmi v2 hooks
+// frontend/pages/index.js - FIXED VERSION with SSR compatibility
 import { useState, useEffect } from 'react'
 import { ConnectButton } from '@rainbow-me/rainbowkit'
 import { useAccount, useReadContract, useWriteContract, useWaitForTransactionReceipt } from 'wagmi'
 import { parseEther, formatEther } from 'viem'
+import ClientOnly from '../components/ClientOnly'
 import WalletInfo from '../components/WalletInfo'
 import TransactionList from '../components/TransactionList'
 import CreateTransaction from '../components/CreateTransaction'
@@ -107,8 +108,8 @@ const CONTRACT_ABI = [
   }
 ]
 
-// Default contract address - Ganti dengan address hasil deployment Anda
-const DEFAULT_CONTRACT_ADDRESS = '0x9Bb65b12162a51413272d10399282E730822Df44' // Dari deployment localhost
+// Default contract address - Updated dari hasil simulasi terbaru
+const DEFAULT_CONTRACT_ADDRESS = '0xE2307e3710d108ceC7a4722a020a050681c835b3'
 
 export default function Home() {
   const [activeTab, setActiveTab] = useState('overview')
@@ -332,7 +333,9 @@ export default function Home() {
             </div>
           </div>
           <div className="animate-slide-in">
-            <ConnectButton />
+            <ClientOnly fallback={<div className="h-10 w-32 bg-white/10 rounded-lg animate-pulse"></div>}>
+              <ConnectButton />
+            </ClientOnly>
           </div>
         </header>
 
@@ -372,180 +375,189 @@ export default function Home() {
           </div>
         </div>
 
-        {/* Main Content */}
-        {isConnected && isValidAddress ? (
-          <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
-            {/* Sidebar Navigation */}
-            <div className="lg:col-span-1">
-              <nav className="card sticky top-8">
-                <h2 className="text-xl font-semibold text-white mb-4 flex items-center">
-                  <span className="mr-2">🧭</span>
-                  Navigation
-                </h2>
-                <ul className="space-y-2">
-                  {tabs.map((tab) => (
-                    <li key={tab.key}>
-                      <button
-                        onClick={() => setActiveTab(tab.key)}
-                        className={`w-full text-left px-4 py-3 rounded-lg flex items-center space-x-3 transition-all duration-200 group ${
-                          activeTab === tab.key
-                            ? 'bg-gradient-to-r from-purple-600 to-blue-600 text-white shadow-lg'
-                            : 'text-gray-300 hover:bg-white/10 hover:text-white'
-                        }`}
-                      >
-                        <span className="text-lg">{tab.icon}</span>
-                        <div className="flex-1">
-                          <div className="font-medium">{tab.label}</div>
-                          <div className="text-xs opacity-75 group-hover:opacity-100 transition-opacity">
-                            {tab.description}
+        {/* Main Content - Wrapped with ClientOnly to prevent SSR issues */}
+        <ClientOnly fallback={
+          <div className="text-center py-16">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-500 mx-auto mb-4"></div>
+            <p className="text-gray-300">Loading wallet interface...</p>
+          </div>
+        }>
+          {isConnected && isValidAddress ? (
+            <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
+              {/* Sidebar Navigation */}
+              <div className="lg:col-span-1">
+                <nav className="card sticky top-8">
+                  <h2 className="text-xl font-semibold text-white mb-4 flex items-center">
+                    <span className="mr-2">🧭</span>
+                    Navigation
+                  </h2>
+                  <ul className="space-y-2">
+                    {tabs.map((tab) => (
+                      <li key={tab.key}>
+                        <button
+                          onClick={() => setActiveTab(tab.key)}
+                          className={`w-full text-left px-4 py-3 rounded-lg flex items-center space-x-3 transition-all duration-200 group ${
+                            activeTab === tab.key
+                              ? 'bg-gradient-to-r from-purple-600 to-blue-600 text-white shadow-lg'
+                              : 'text-gray-300 hover:bg-white/10 hover:text-white'
+                          }`}
+                        >
+                          <span className="text-lg">{tab.icon}</span>
+                          <div className="flex-1">
+                            <div className="font-medium">{tab.label}</div>
+                            <div className="text-xs opacity-75 group-hover:opacity-100 transition-opacity">
+                              {tab.description}
+                            </div>
                           </div>
-                        </div>
-                        {activeTab === tab.key && (
-                          <div className="w-2 h-2 bg-white rounded-full animate-pulse"></div>
-                        )}
-                      </button>
-                    </li>
-                  ))}
-                </ul>
+                          {activeTab === tab.key && (
+                            <div className="w-2 h-2 bg-white rounded-full animate-pulse"></div>
+                          )}
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
 
-                {/* Quick Stats */}
-                <div className="mt-6 pt-6 border-t border-white/20">
-                  <h3 className="text-lg font-semibold text-white mb-3">Quick Stats</h3>
-                  <div className="space-y-3">
-                    <div className="flex justify-between items-center">
-                      <span className="text-gray-400 text-sm">Signers</span>
-                      <span className="text-white font-medium">
-                        {signers?.length || 0}
-                      </span>
-                    </div>
-                    <div className="flex justify-between items-center">
-                      <span className="text-gray-400 text-sm">Required</span>
-                      <span className="text-white font-medium">
-                        {Number(requiredSignatures || 0)}
-                      </span>
-                    </div>
-                    <div className="flex justify-between items-center">
-                      <span className="text-gray-400 text-sm">Transactions</span>
-                      <span className="text-white font-medium">
-                        {Number(transactionCount || 0)}
-                      </span>
-                    </div>
-                    <div className="flex justify-between items-center">
-                      <span className="text-gray-400 text-sm">Your Role</span>
-                      <span className={`text-sm font-medium ${isSigner ? 'text-green-400' : 'text-gray-400'}`}>
-                        {isSigner ? 'Signer' : 'Observer'}
-                      </span>
+                  {/* Quick Stats */}
+                  <div className="mt-6 pt-6 border-t border-white/20">
+                    <h3 className="text-lg font-semibold text-white mb-3">Quick Stats</h3>
+                    <div className="space-y-3">
+                      <div className="flex justify-between items-center">
+                        <span className="text-gray-400 text-sm">Signers</span>
+                        <span className="text-white font-medium">
+                          {signers?.length || 0}
+                        </span>
+                      </div>
+                      <div className="flex justify-between items-center">
+                        <span className="text-gray-400 text-sm">Required</span>
+                        <span className="text-white font-medium">
+                          {Number(requiredSignatures || 0)}
+                        </span>
+                      </div>
+                      <div className="flex justify-between items-center">
+                        <span className="text-gray-400 text-sm">Transactions</span>
+                        <span className="text-white font-medium">
+                          {Number(transactionCount || 0)}
+                        </span>
+                      </div>
+                      <div className="flex justify-between items-center">
+                        <span className="text-gray-400 text-sm">Your Role</span>
+                        <span className={`text-sm font-medium ${isSigner ? 'text-green-400' : 'text-gray-400'}`}>
+                          {isSigner ? 'Signer' : 'Observer'}
+                        </span>
+                      </div>
                     </div>
                   </div>
-                </div>
-              </nav>
-            </div>
+                </nav>
+              </div>
 
-            {/* Main Content Area */}
-            <div className="lg:col-span-3">
-              <div className="card">
-                {/* Tab Header */}
-                <div className="mb-6 pb-4 border-b border-white/20">
-                  <div className="flex items-center space-x-3">
-                    <span className="text-2xl">{currentTab.icon}</span>
-                    <div>
-                      <h2 className="text-2xl font-bold text-white">
-                        {currentTab.label}
-                      </h2>
-                      <p className="text-gray-300">
-                        {currentTab.description}
+              {/* Main Content Area */}
+              <div className="lg:col-span-3">
+                <div className="card">
+                  {/* Tab Header */}
+                  <div className="mb-6 pb-4 border-b border-white/20">
+                    <div className="flex items-center space-x-3">
+                      <span className="text-2xl">{currentTab.icon}</span>
+                      <div>
+                        <h2 className="text-2xl font-bold text-white">
+                          {currentTab.label}
+                        </h2>
+                        <p className="text-gray-300">
+                          {currentTab.description}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Loading State */}
+                  {isLoading ? (
+                    <div className="text-center py-12">
+                      <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-500 mx-auto mb-4"></div>
+                      <p className="text-gray-300">Loading wallet data...</p>
+                    </div>
+                  ) : hasErrors ? (
+                    <div className="text-center py-12">
+                      <div className="text-red-400 text-4xl mb-4">⚠️</div>
+                      <h3 className="text-xl font-semibold text-white mb-2">
+                        Connection Error
+                      </h3>
+                      <p className="text-gray-300 mb-4">
+                        Unable to connect to the smart contract. Please check:
                       </p>
+                      <ul className="text-gray-400 text-left max-w-md mx-auto space-y-1">
+                        <li>• Contract address is correct</li>
+                        <li>• You're connected to the right network</li>
+                        <li>• Contract is deployed and accessible</li>
+                      </ul>
+                      <button
+                        onClick={refreshData}
+                        className="btn-primary mt-4"
+                      >
+                        Try Again
+                      </button>
+                    </div>
+                  ) : (
+                    /* Tab Content */
+                    <div className="animate-fade-in">
+                      {renderTabContent()}
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          ) : !isConnected ? (
+            /* Not Connected State */
+            <div className="text-center py-16">
+              <div className="card max-w-md mx-auto animate-bounce-in">
+                <div className="text-6xl mb-4">🔐</div>
+                <h2 className="text-2xl font-bold text-white mb-4">
+                  Connect Your Wallet
+                </h2>
+                <p className="text-gray-300 mb-6">
+                  Please connect your wallet to access the DAO MultiSig Wallet interface and start managing your funds securely.
+                </p>
+                <ClientOnly fallback={<div className="h-10 w-32 bg-white/10 rounded-lg animate-pulse mx-auto"></div>}>
+                  <ConnectButton />
+                </ClientOnly>
+                
+                {/* Features Preview */}
+                <div className="mt-8 pt-6 border-t border-white/20">
+                  <h3 className="text-lg font-semibold text-white mb-4">Features</h3>
+                  <div className="grid grid-cols-2 gap-4 text-sm">
+                    <div className="text-center">
+                      <div className="text-2xl mb-1">🛡️</div>
+                      <div className="text-gray-300">Multi-Signature Security</div>
+                    </div>
+                    <div className="text-center">
+                      <div className="text-2xl mb-1">🗳️</div>
+                      <div className="text-gray-300">DAO Governance</div>
+                    </div>
+                    <div className="text-center">
+                      <div className="text-2xl mb-1">⛽</div>
+                      <div className="text-gray-300">Gas Optimization</div>
+                    </div>
+                    <div className="text-center">
+                      <div className="text-2xl mb-1">📊</div>
+                      <div className="text-gray-300">Real-time Analytics</div>
                     </div>
                   </div>
                 </div>
-
-                {/* Loading State */}
-                {isLoading ? (
-                  <div className="text-center py-12">
-                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-500 mx-auto mb-4"></div>
-                    <p className="text-gray-300">Loading wallet data...</p>
-                  </div>
-                ) : hasErrors ? (
-                  <div className="text-center py-12">
-                    <div className="text-red-400 text-4xl mb-4">⚠️</div>
-                    <h3 className="text-xl font-semibold text-white mb-2">
-                      Connection Error
-                    </h3>
-                    <p className="text-gray-300 mb-4">
-                      Unable to connect to the smart contract. Please check:
-                    </p>
-                    <ul className="text-gray-400 text-left max-w-md mx-auto space-y-1">
-                      <li>• Contract address is correct</li>
-                      <li>• You're connected to the right network</li>
-                      <li>• Contract is deployed and accessible</li>
-                    </ul>
-                    <button
-                      onClick={refreshData}
-                      className="btn-primary mt-4"
-                    >
-                      Try Again
-                    </button>
-                  </div>
-                ) : (
-                  /* Tab Content */
-                  <div className="animate-fade-in">
-                    {renderTabContent()}
-                  </div>
-                )}
               </div>
             </div>
-          </div>
-        ) : !isConnected ? (
-          /* Not Connected State */
-          <div className="text-center py-16">
-            <div className="card max-w-md mx-auto animate-bounce-in">
-              <div className="text-6xl mb-4">🔐</div>
-              <h2 className="text-2xl font-bold text-white mb-4">
-                Connect Your Wallet
-              </h2>
-              <p className="text-gray-300 mb-6">
-                Please connect your wallet to access the DAO MultiSig Wallet interface and start managing your funds securely.
-              </p>
-              <ConnectButton />
-              
-              {/* Features Preview */}
-              <div className="mt-8 pt-6 border-t border-white/20">
-                <h3 className="text-lg font-semibold text-white mb-4">Features</h3>
-                <div className="grid grid-cols-2 gap-4 text-sm">
-                  <div className="text-center">
-                    <div className="text-2xl mb-1">🛡️</div>
-                    <div className="text-gray-300">Multi-Signature Security</div>
-                  </div>
-                  <div className="text-center">
-                    <div className="text-2xl mb-1">🗳️</div>
-                    <div className="text-gray-300">DAO Governance</div>
-                  </div>
-                  <div className="text-center">
-                    <div className="text-2xl mb-1">⛽</div>
-                    <div className="text-gray-300">Gas Optimization</div>
-                  </div>
-                  <div className="text-center">
-                    <div className="text-2xl mb-1">📊</div>
-                    <div className="text-gray-300">Real-time Analytics</div>
-                  </div>
-                </div>
+          ) : (
+            /* Invalid Address State */
+            <div className="text-center py-16">
+              <div className="card max-w-md mx-auto">
+                <div className="text-6xl mb-4">❌</div>
+                <h2 className="text-2xl font-bold text-white mb-4">
+                  Invalid Contract Address
+                </h2>
+                <p className="text-gray-300 mb-6">
+                  Please enter a valid contract address to continue.
+                </p>
               </div>
             </div>
-          </div>
-        ) : (
-          /* Invalid Address State */
-          <div className="text-center py-16">
-            <div className="card max-w-md mx-auto">
-              <div className="text-6xl mb-4">❌</div>
-              <h2 className="text-2xl font-bold text-white mb-4">
-                Invalid Contract Address
-              </h2>
-              <p className="text-gray-300 mb-6">
-                Please enter a valid contract address to continue.
-              </p>
-            </div>
-          </div>
-        )}
+          )}
+        </ClientOnly>
 
         {/* Footer */}
         <footer className="mt-16 text-center text-gray-400">

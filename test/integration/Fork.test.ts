@@ -1,4 +1,4 @@
-// test/integration/Fork.test.ts - FIXED VERSION
+// test/integration/Fork.test.ts - FIXED VERSION - TypeScript array inference fix
 import { expect } from "chai";
 import { ethers } from "hardhat";
 import type { DAOMultiSigWallet, GasOptimizer } from "../../typechain-types";
@@ -137,7 +137,7 @@ describe("Fork Integration Tests", function () {
             const deadline = Math.floor(Date.now() / 1000) + 86400;
             
             // Submit multiple transactions
-            const txIds = [];
+            const txIds: number[] = []; // FIXED: Explicit type annotation
             for (let i = 0; i < 5; i++) {
                 await wallet.connect(signers[0]).submitTransaction(
                     recipient.address,
@@ -169,7 +169,7 @@ describe("Fork Integration Tests", function () {
     describe("Stress Testing", function () {
         it("Should handle maximum number of signers", async function () {
             const maxSigners = 10; // Reduced for testing
-            const signerAddresses = [];
+            const signerAddresses: string[] = []; // FIXED: Explicit type annotation
             
             // Create max number of signers (use different signers to avoid duplicates)
             for (let i = 0; i < maxSigners && i < signers.length; i++) {
@@ -428,7 +428,7 @@ describe("Fork Integration Tests", function () {
             console.log(`Submitted 10 transactions in ${submitTime}ms`);
             
             // Vote on all transactions using batch
-            const txIds = Array.from({length: 10}, (_, i) => i);
+            const txIds: number[] = Array.from({length: 10}, (_, i) => i); // FIXED: Explicit type
             const voteStartTime = Date.now();
             
             await wallet.connect(signers[0]).batchVote(txIds, Array(10).fill(true));

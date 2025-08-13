@@ -1,3 +1,4 @@
+// scripts/simulate.ts - FIXED VERSION - TypeScript array inference fix
 import { ethers } from "hardhat";
 import type { SignerWithAddress } from "@nomicfoundation/hardhat-ethers/signers";
 import type { DAOMultiSigWallet, GasOptimizer } from "../typechain-types";
@@ -6,7 +7,7 @@ import deployScript from "./deploy";
 /**
  * Enhanced simulation script that integrates with deploy.ts
  * Testing all features including gas optimization, voting, and batch operations
- * FIXED VERSION - Resolves timing and voting period issues
+ * FIXED VERSION - Resolves timing and voting period issues + TypeScript fixes
  */
 
 interface DeploymentResult {
@@ -303,7 +304,7 @@ class IntegratedWalletSimulator {
     console.log(`   📊 Batch size: ${batchSize} transactions`);
     
     // Submit batch transactions using individual calls
-    const batchTxIds = [];
+    const batchTxIds: number[] = []; // FIXED: Explicit type annotation
     let totalSubmitGas = 0n;
     
     for (let i = 0; i < batchSize; i++) {

@@ -1,30 +1,18 @@
-// FIXED VERSION - Correct provider order and Wagmi v2 compatibility
+// frontend/pages/_app.js - FIXED VERSION - SSR Compatible with proper provider setup
 import '../styles/globals.css'
 import '@rainbow-me/rainbowkit/styles.css'
+import { useState } from 'react'
 import {
   getDefaultWallets,
   RainbowKitProvider,
   darkTheme,
 } from '@rainbow-me/rainbowkit'
-import { WagmiProvider } from 'wagmi'
+import { WagmiProvider, createConfig } from 'wagmi'
 import { mainnet, sepolia, hardhat, localhost } from 'wagmi/chains'
 import { http } from 'viem'
-import { createConfig } from 'wagmi'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 
-// Create QueryClient FIRST
-const queryClient = new QueryClient({
-  defaultOptions: {
-    queries: {
-      staleTime: 1000 * 60 * 5, // 5 minutes
-      gcTime: 1000 * 60 * 10, // 10 minutes (renamed from cacheTime)
-      retry: 3,
-      retryDelay: attemptIndex => Math.min(1000 * 2 ** attemptIndex, 30000),
-    },
-  },
-})
-
-// Configure chains with Wagmi v2 syntax
+// Configure chains
 const chains = [mainnet, sepolia, hardhat, localhost]
 
 // Create wagmi config
@@ -45,7 +33,7 @@ const config = createConfig({
   ssr: true, // Enable SSR support
 })
 
-// Configure wallet connectors with correct chains reference
+// Configure wallet connectors
 const { connectors } = getDefaultWallets({
   appName: 'DAO MultiSig Wallet',
   projectId: process.env.NEXT_PUBLIC_WALLET_CONNECT_PROJECT_ID || 'demo',
@@ -53,8 +41,25 @@ const { connectors } = getDefaultWallets({
 })
 
 function MyApp({ Component, pageProps }) {
+  // Create QueryClient inside component to avoid SSR hydration issues
+  const [queryClient] = useState(() => new QueryClient({
+    defaultOptions: {
+      queries: {
+        staleTime: 1000 * 60 * 5, // 5 minutes
+        gcTime: 1000 * 60 * 10, // 10 minutes (renamed from cacheTime)
+        retry: 3,
+        retryDelay: attemptIndex => Math.min(1000 * 2 ** attemptIndex, 30000),
+        // Disable SSR queries to prevent hydration mismatches
+        refetchOnWindowFocus: false,
+      },
+      mutations: {
+        retry: 1,
+      },
+    },
+  }))
+
   return (
-    // CORRECT ORDER: QueryClientProvider MUST be the outermost provider
+    // CORRECT ORDER: QueryClientProvider MUST be outermost
     <QueryClientProvider client={queryClient}>
       <WagmiProvider config={config}>
         <RainbowKitProvider
@@ -72,6 +77,8 @@ function MyApp({ Component, pageProps }) {
           }}
           showRecentTransactions={true}
           modalSize="compact"
+          // Add SSR configuration to prevent hydration issues
+          initialChain={hardhat}
         >
           <Component {...pageProps} />
         </RainbowKitProvider>

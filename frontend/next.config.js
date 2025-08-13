@@ -3,7 +3,7 @@ const nextConfig = {
   reactStrictMode: true,
   swcMinify: true,
   
-  // Disable optimizeCss experiment that causes critters issue
+  // Disable SSR for client-only components to prevent hydration issues
   experimental: {
     esmExternals: false,
     // Remove optimizeCss for now
@@ -42,6 +42,14 @@ const nextConfig = {
       /Critical dependency: the request of a dependency is an expression/,
     ]
 
+    // Fix for RainbowKit SSR issues
+    if (!isServer) {
+      config.resolve.fallback = {
+        ...config.resolve.fallback,
+        encoding: false,
+      }
+    }
+
     return config
   },
 
@@ -75,6 +83,9 @@ const nextConfig = {
 
   // Generate ETags
   generateEtags: true,
+
+  // Fix for SSR hydration issues with crypto-related libraries
+  transpilePackages: ['@rainbow-me/rainbowkit'],
 }
 
 module.exports = nextConfig
