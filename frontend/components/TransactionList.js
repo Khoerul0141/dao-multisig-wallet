@@ -1,6 +1,6 @@
 // file frontend/components/TransactionList.js
 import { useState, useEffect } from 'react'
-import { useContractRead, useContractWrite, useWaitForTransaction } from 'wagmi'
+import { useReadContract, useWriteContract, useWaitForTransactionReceipt } from 'wagmi'
 import { formatEther } from 'viem'
 import { 
   ClockIcon, 
@@ -69,15 +69,15 @@ export default function TransactionList({ contractAddress, transactionCount, req
     data: executeData, 
     write: executeTransaction, 
     isLoading: isExecuteLoading 
-  } = useContractWrite({
+  } = useWriteContract({
     address: contractAddress,
     abi: CONTRACT_ABI,
     functionName: 'executeTransaction',
   })
 
   // Wait for transaction
-  const { isLoading: isWaitingForTx, isSuccess } = useWaitForTransaction({
-    hash: executeData?.hash,
+  const { isLoading: isWaitingForTx, isSuccess } = useWaitForTransactionReceipt({
+    hash: executeData,
   })
 
   // Load semua data transaksi
@@ -237,6 +237,9 @@ export default function TransactionList({ contractAddress, transactionCount, req
 
     try {
       await executeTransaction({
+        address: contractAddress,
+        abi: CONTRACT_ABI,
+        functionName: 'executeTransaction',
         args: [txId]
       })
     } catch (error) {

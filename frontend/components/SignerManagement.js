@@ -1,6 +1,6 @@
 // file frontend/components/SignerManagement.js
 import { useState, useEffect } from 'react'
-import { useContractWrite, useWaitForTransaction, useAccount } from 'wagmi'
+import { useWriteContract, useWaitForTransactionReceipt, useAccount } from 'wagmi'
 import { 
   UserPlusIcon, 
   UserMinusIcon, 
@@ -92,15 +92,15 @@ export default function SignerManagement({ contractAddress, signers, isSigner })
     data: submitData, 
     write: submitTransaction, 
     isLoading: isSubmitLoading 
-  } = useContractWrite({
+  } = useWriteContract({
     address: contractAddress,
     abi: CONTRACT_ABI,
     functionName: 'submitTransaction',
   })
 
   // Wait for transaction
-  const { isLoading: isWaitingForTx, isSuccess } = useWaitForTransaction({
-    hash: submitData?.hash,
+  const { isLoading: isWaitingForTx, isSuccess } = useWaitForTransactionReceipt({
+    hash: submitData,
   })
 
   // Management action configurations
@@ -229,6 +229,9 @@ export default function SignerManagement({ contractAddress, signers, isSigner })
       const encodedData = managementActions[actionKey].encodeFunction(targetAddress)
 
       await submitTransaction({
+        address: contractAddress,
+        abi: CONTRACT_ABI,
+        functionName: 'submitTransaction',
         args: [contractAddress, 0, encodedData, deadline]
       })
 

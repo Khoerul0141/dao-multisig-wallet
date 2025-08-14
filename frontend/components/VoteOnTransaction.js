@@ -1,6 +1,6 @@
 // file frontend/components/VoteOnTransaction.js
 import { useState, useEffect } from 'react'
-import { useContractRead, useContractWrite, useWaitForTransaction } from 'wagmi'
+import { useReadContract, useWriteContract, useWaitForTransactionReceipt } from 'wagmi'
 import { formatEther } from 'viem'
 import { 
   HandThumbUpIcon, 
@@ -103,11 +103,13 @@ export default function VoteOnTransaction({ contractAddress, transactionCount, i
   const [loading, setLoading] = useState(true)
 
   // Contract reads
-  const { data: requiredSignatures } = useContractRead({
+  const { data: requiredSignatures } = useReadContract({
     address: contractAddress,
     abi: CONTRACT_ABI,
     functionName: 'getRequiredSignatures',
-    enabled: !!contractAddress,
+    query: {
+      enabled: !!contractAddress,
+    }
   })
 
   // Contract writes
@@ -115,7 +117,7 @@ export default function VoteOnTransaction({ contractAddress, transactionCount, i
     data: voteData, 
     write: vote, 
     isLoading: isVoteLoading 
-  } = useContractWrite({
+  } = useWriteContract({
     address: contractAddress,
     abi: CONTRACT_ABI,
     functionName: 'voteOnTransaction',
@@ -125,15 +127,15 @@ export default function VoteOnTransaction({ contractAddress, transactionCount, i
     data: batchVoteData, 
     write: batchVote, 
     isLoading: isBatchVoteLoading 
-  } = useContractWrite({
+  } = useWriteContract({
     address: contractAddress,
     abi: CONTRACT_ABI,
     functionName: 'batchVote',
   })
 
   // Wait for transaction
-  const { isLoading: isWaitingForTx, isSuccess } = useWaitForTransaction({
-    hash: voteData?.hash || batchVoteData?.hash,
+  const { isLoading: isWaitingForTx, isSuccess } = useWaitForTransactionReceipt({
+    hash: voteData || batchVoteData,
   })
 
   // Load transactions data
@@ -200,6 +202,9 @@ export default function VoteOnTransaction({ contractAddress, transactionCount, i
 
     try {
       await vote({
+        address: contractAddress,
+        abi: CONTRACT_ABI,
+        functionName: 'voteOnTransaction',
         args: [txId, support]
       })
     } catch (error) {
