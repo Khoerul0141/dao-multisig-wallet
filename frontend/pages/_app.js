@@ -1,12 +1,20 @@
-// frontend/pages/_app.js - FIXED VERSION - Proper Provider Order
+// frontend/pages/_app.js - FIXED VERSION without Safe connectors
 import '../styles/globals.css'
 import '@rainbow-me/rainbowkit/styles.css'
 import { useState, useEffect } from 'react'
 import {
-  getDefaultWallets,
   RainbowKitProvider,
   darkTheme,
+  connectorsForWallets,
 } from '@rainbow-me/rainbowkit'
+import {
+  metaMaskWallet,
+  injectedWallet,
+  rainbowWallet,
+  walletConnectWallet,
+  coinbaseWallet,
+  trustWallet,
+} from '@rainbow-me/rainbowkit/wallets'
 import { WagmiProvider, createConfig, http } from 'wagmi'
 import { mainnet, sepolia, hardhat, localhost } from 'wagmi/chains'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
@@ -14,8 +22,35 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 // Configure chains
 const chains = [mainnet, sepolia, hardhat, localhost]
 
+// Configure connectors (WITHOUT Safe connector to avoid the error)
+const connectors = connectorsForWallets(
+  [
+    {
+      groupName: 'Recommended',
+      wallets: [
+        metaMaskWallet,
+        injectedWallet,
+        rainbowWallet,
+        walletConnectWallet,
+      ],
+    },
+    {
+      groupName: 'Other',
+      wallets: [
+        coinbaseWallet,
+        trustWallet,
+      ],
+    },
+  ],
+  {
+    appName: 'DAO MultiSig Wallet',
+    projectId: process.env.NEXT_PUBLIC_WALLET_CONNECT_PROJECT_ID || 'demo-project-id',
+  }
+)
+
 // Create wagmi config
 const config = createConfig({
+  connectors,
   chains,
   transports: {
     [mainnet.id]: http(process.env.NEXT_PUBLIC_ALCHEMY_API_KEY 
@@ -29,26 +64,18 @@ const config = createConfig({
     [hardhat.id]: http('http://127.0.0.1:8545'),
     [localhost.id]: http('http://127.0.0.1:8545'),
   },
-  ssr: false, // FIXED: Disable SSR to prevent hydration issues
-})
-
-// Configure wallet connectors
-const { connectors } = getDefaultWallets({
-  appName: 'DAO MultiSig Wallet',
-  projectId: process.env.NEXT_PUBLIC_WALLET_CONNECT_PROJECT_ID || 'demo-project-id',
-  chains,
+  ssr: false,
 })
 
 function MyApp({ Component, pageProps }) {
-  // FIXED: Create QueryClient inside component with proper configuration
+  // Create QueryClient inside component with proper configuration
   const [queryClient] = useState(() => new QueryClient({
     defaultOptions: {
       queries: {
         staleTime: 1000 * 60 * 5, // 5 minutes
         gcTime: 1000 * 60 * 10, // 10 minutes
-        retry: 1, // FIXED: Reduced retry to prevent infinite loops
+        retry: 1,
         retryDelay: 1000,
-        // FIXED: Disable SSR queries to prevent hydration mismatches
         refetchOnWindowFocus: false,
         refetchOnMount: false,
         refetchOnReconnect: false,
@@ -59,14 +86,14 @@ function MyApp({ Component, pageProps }) {
     },
   }))
 
-  // FIXED: Add client-side only rendering
+  // Add client-side only rendering
   const [mounted, setMounted] = useState(false)
   
   useEffect(() => {
     setMounted(true)
   }, [])
 
-  // FIXED: Prevent SSR rendering to avoid hydration issues
+  // Prevent SSR rendering to avoid hydration issues
   if (!mounted) {
     return (
       <div style={{
@@ -87,7 +114,6 @@ function MyApp({ Component, pageProps }) {
   }
 
   return (
-    // FIXED: Correct provider order - QueryClient MUST be outermost
     <QueryClientProvider client={queryClient}>
       <WagmiProvider config={config}>
         <RainbowKitProvider
@@ -105,7 +131,6 @@ function MyApp({ Component, pageProps }) {
           }}
           showRecentTransactions={true}
           modalSize="compact"
-          // FIXED: Remove initialChain to prevent SSR issues
         >
           <Component {...pageProps} />
         </RainbowKitProvider>

@@ -2,11 +2,11 @@ const webpack = require('webpack');
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  
   transpilePackages: [
     'viem',
     'wagmi',
     '@wagmi/core',
+    '@wagmi/connectors',
     '@safe-global/safe-apps-provider',
     '@safe-global/safe-apps-sdk',
     '@rainbow-me/rainbowkit',
@@ -17,10 +17,11 @@ const nextConfig = {
   swcMinify: true,
   
   experimental: {
-    esmExternals: false,
+    esmExternals: 'loose', // Changed from false to 'loose'
   },
 
-  webpack: (config, { isServer }) => {
+  webpack: (config, { isServer, webpack }) => {
+    // Fallback configuration
     config.resolve.fallback = {
       ...config.resolve.fallback,
       fs: false,
@@ -36,8 +37,10 @@ const nextConfig = {
       url: false,
       util: false,
       buffer: require.resolve('buffer'),
+      process: require.resolve('process/browser'),
     };
 
+    // Provide plugin for polyfills
     config.plugins.push(
       new webpack.ProvidePlugin({
         Buffer: ['buffer', 'Buffer'],
@@ -45,6 +48,7 @@ const nextConfig = {
       })
     );
 
+    // Handle .m?js files
     config.module.rules.push({
       test: /\.m?js$/,
       resolve: {
@@ -52,19 +56,51 @@ const nextConfig = {
       },
     });
 
+    // Fix for Safe Global SDK import.meta issues
+    config.module.rules.push({
+      test: /\.js$/,
+      include: /node_modules\/@safe-global/,
+      type: 'javascript/auto',
+      resolve: {
+        fullySpecified: false,
+      },
+    });
+
+    // Add rule for ESM modules
+    config.module.rules.push({
+      test: /\.(js|mjs)$/,
+      include: /node_modules/,
+      type: 'javascript/auto',
+      resolve: {
+        fullySpecified: false,
+      },
+    });
+
+    // Ignore webpack warnings
     config.ignoreWarnings = [
       /Failed to parse source map/,
       /Critical dependency: the request of a dependency is an expression/,
       /Module not found: Can't resolve/,
+      /Can't resolve 'pino-pretty'/,
+      /Can't resolve 'lokijs'/,
+      /Can't resolve 'encoding'/,
     ];
 
+    // Externals for server-side
     if (!isServer) {
       config.externals = config.externals || [];
       config.externals.push({
         'utf-8-validate': 'commonjs utf-8-validate',
         'bufferutil': 'commonjs bufferutil',
+        'encoding': 'commonjs encoding',
       });
     }
+
+    // Alias configuration
+    config.resolve.alias = {
+      ...config.resolve.alias,
+      '@': __dirname,
+    };
 
     return config;
   },
@@ -87,7 +123,6 @@ const nextConfig = {
   },
 
   optimizeFonts: false,
-  output: 'standalone',
   compress: true,
   generateEtags: true,
 
