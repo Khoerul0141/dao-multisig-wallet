@@ -65,15 +65,12 @@ export default function TransactionList({ contractAddress, transactionCount, req
   const [showDetails, setShowDetails] = useState(false)
 
   // Contract write untuk execute transaction
+  
   const { 
     data: executeData, 
-    write: executeTransaction, 
-    isLoading: isExecuteLoading 
-  } = useWriteContract({
-    address: contractAddress,
-    abi: CONTRACT_ABI,
-    functionName: 'executeTransaction',
-  })
+    writeContract: executeTransaction, 
+    isPending: isExecuteLoading 
+  } = useWriteContract()
 
   // Wait for transaction
   const { isLoading: isWaitingForTx, isSuccess } = useWaitForTransactionReceipt({

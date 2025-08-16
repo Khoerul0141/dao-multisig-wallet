@@ -88,15 +88,12 @@ export default function SignerManagement({ contractAddress, signers, isSigner })
   const [pendingAction, setPendingAction] = useState(null)
 
   // Contract write hook
+
   const { 
-    data: submitData, 
-    write: submitTransaction, 
-    isLoading: isSubmitLoading 
-  } = useWriteContract({
-    address: contractAddress,
-    abi: CONTRACT_ABI,
-    functionName: 'submitTransaction',
-  })
+    data: submitData,
+    writeContract: submitTransaction, 
+    isPending: isSubmitLoading 
+  } = useWriteContract()
 
   // Wait for transaction
   const { isLoading: isWaitingForTx, isSuccess } = useWaitForTransactionReceipt({
