@@ -1,8 +1,9 @@
-// file frontend/components/WalletInfo.js
+// file frontend/components/WalletInfo.js - FIXED VERSION with BigInt compatibility
 import { useState, useEffect } from 'react'
 import { useBalance, useAccount, useContractRead } from 'wagmi'
 import { formatEther, parseEther } from 'viem'
 import { CopyToClipboard } from 'react-copy-to-clipboard'
+import { safeNumber, safeArrayLength, formatTimeRemaining } from '../utils/bigint'
 import { 
   CheckIcon, 
   DocumentDuplicateIcon,
@@ -22,59 +23,6 @@ import {
   SparklesIcon
 } from '@heroicons/react/24/outline'
 
-// Enhanced Contract ABI for additional reads
-const EXTENDED_CONTRACT_ABI = [
-  {
-    "inputs": [],
-    "name": "getSigners",
-    "outputs": [{"internalType": "address[]", "name": "", "type": "address[]"}],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [],
-    "name": "getRequiredSignatures",
-    "outputs": [{"internalType": "uint256", "name": "", "type": "uint256"}],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [],
-    "name": "getProposalDuration",
-    "outputs": [{"internalType": "uint256", "name": "", "type": "uint256"}],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [],
-    "name": "executionDelay",
-    "outputs": [{"internalType": "uint256", "name": "", "type": "uint256"}],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [],
-    "name": "transactionCount",
-    "outputs": [{"internalType": "uint256", "name": "", "type": "uint256"}],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [],
-    "name": "isPaused",
-    "outputs": [{"internalType": "bool", "name": "", "type": "bool"}],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [],
-    "name": "owner",
-    "outputs": [{"internalType": "address", "name": "", "type": "address"}],
-    "stateMutability": "view",
-    "type": "function"
-  }
-]
-
 export default function WalletInfo({ 
   contractAddress, 
   signers = [], 
@@ -87,7 +35,7 @@ export default function WalletInfo({
 }) {
   const { address } = useAccount()
   
-  // Enhanced state management
+  // Enhanced state management - ensure all numbers are converted
   const [stats, setStats] = useState({
     totalSigners: 0,
     requiredSignatures: 0,
@@ -120,45 +68,38 @@ export default function WalletInfo({
     address: contractAddress,
     enabled: contractAddress !== '0x...' && contractAddress !== '',
     watch: true,
-    cacheTime: 30000, // 30 seconds cache
+    cacheTime: 30000,
   })
 
-  // Additional contract reads for enhanced information
-  const { data: contractOwner } = useContractRead({
-    address: contractAddress,
-    abi: EXTENDED_CONTRACT_ABI,
-    functionName: 'owner',
-    enabled: contractAddress !== '0x...' && contractAddress !== '',
-  })
-
-  // Calculate enhanced statistics
+  // Calculate enhanced statistics with safe number conversion
   useEffect(() => {
     const calculateStats = () => {
-      const totalSigners = signers.length
-      const securityLevel = totalSigners > 0 ? Math.round((requiredSignatures / totalSigners) * 100) : 0
+      const totalSigners = safeArrayLength(signers)
+      const requiredSigs = safeNumber(requiredSignatures)
+      const txCount = safeNumber(transactionCount)
+      const securityLevel = totalSigners > 0 ? Math.round((requiredSigs / totalSigners) * 100) : 0
       
-      // Mock calculations for transaction analytics (in real app, you'd read from contract)
-      const avgTransactionValue = transactionCount > 0 ? 
-        (parseFloat(formatEther(balance?.value || 0)) / transactionCount).toFixed(4) : '0'
+      // Mock calculations for transaction analytics
+      const balanceEth = balance ? parseFloat(formatEther(balance.value)) : 0
+      const avgTransactionValue = txCount > 0 ? (balanceEth / txCount).toFixed(4) : '0'
       
       setStats({
         totalSigners,
-        requiredSignatures,
-        totalTransactions: transactionCount,
+        requiredSignatures: requiredSigs,
+        totalTransactions: txCount,
         balance: balance ? formatEther(balance.value) : '0',
-        userIsSigner: isSigner,
+        userIsSigner: Boolean(isSigner),
         securityLevel,
         avgTransactionValue,
-        pendingTransactions: Math.floor(transactionCount * 0.3), // Mock data
-        executedTransactions: Math.floor(transactionCount * 0.6), // Mock data
-        expiredTransactions: Math.floor(transactionCount * 0.1), // Mock data
+        pendingTransactions: Math.floor(txCount * 0.3),
+        executedTransactions: Math.floor(txCount * 0.6),
+        expiredTransactions: Math.floor(txCount * 0.1),
       })
 
-      // Set additional capabilities based on contract features
       setAdditionalData({
-        gasOptimizationEnabled: true, // Your contract has GasOptimizer library
-        emergencyPauseEnabled: true, // Your contract has pause functionality
-        daoGovernanceActive: true // Your contract has DAO governance features
+        gasOptimizationEnabled: true,
+        emergencyPauseEnabled: true,
+        daoGovernanceActive: true
       })
     }
 
@@ -169,8 +110,6 @@ export default function WalletInfo({
   const handleCopy = (text, label = 'Address') => {
     setCopiedAddress(text)
     setTimeout(() => setCopiedAddress(null), 3000)
-    
-    // Optional: Show toast notification
     console.log(`${label} copied to clipboard: ${text}`)
   }
 
@@ -180,11 +119,12 @@ export default function WalletInfo({
     return `${addr.substring(0, startLength)}...${addr.substring(addr.length - endLength)}`
   }
 
-  // Format time duration
+  // Format time duration with safe conversion
   const formatDuration = (seconds) => {
-    const days = Math.floor(seconds / (24 * 60 * 60))
-    const hours = Math.floor((seconds % (24 * 60 * 60)) / (60 * 60))
-    const minutes = Math.floor((seconds % (60 * 60)) / 60)
+    const secs = safeNumber(seconds)
+    const days = Math.floor(secs / (24 * 60 * 60))
+    const hours = Math.floor((secs % (24 * 60 * 60)) / (60 * 60))
+    const minutes = Math.floor((secs % (60 * 60)) / 60)
     
     if (days > 0) return `${days}d ${hours}h`
     if (hours > 0) return `${hours}h ${minutes}m`
@@ -313,7 +253,6 @@ export default function WalletInfo({
     setLoading(true)
     try {
       await refetchBalance()
-      // Add other refresh logic here if needed
     } catch (err) {
       setError('Failed to refresh data')
     } finally {
@@ -497,18 +436,12 @@ export default function WalletInfo({
         <div className="flex items-center justify-between mb-4">
           <h3 className="text-xl font-semibold text-white flex items-center">
             <UserGroupIcon className="h-5 w-5 mr-2 text-purple-400" />
-            Authorized Signers ({signers.length})
+            Authorized Signers ({safeArrayLength(signers)})
           </h3>
-          
-          {contractOwner && (
-            <div className="text-sm text-gray-400">
-              Owner: {truncateAddress(contractOwner)}
-            </div>
-          )}
         </div>
         
         <div className="space-y-3">
-          {signers.length > 0 ? signers.map((signer, index) => (
+          {signers && signers.length > 0 ? signers.map((signer, index) => (
             <div 
               key={index} 
               className={`flex items-center justify-between p-4 rounded-lg transition-all hover:bg-white/10 ${
@@ -534,11 +467,6 @@ export default function WalletInfo({
                     {signer.toLowerCase() === address?.toLowerCase() && (
                       <span className="text-xs bg-purple-500 text-white px-2 py-1 rounded-full">
                         You
-                      </span>
-                    )}
-                    {signer.toLowerCase() === contractOwner?.toLowerCase() && (
-                      <span className="text-xs bg-orange-500 text-white px-2 py-1 rounded-full">
-                        Owner
                       </span>
                     )}
                   </div>

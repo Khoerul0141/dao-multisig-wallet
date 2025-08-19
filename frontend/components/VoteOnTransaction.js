@@ -1,4 +1,4 @@
-// file frontend/components/VoteOnTransaction.js - FIXED for Wagmi v2
+// file frontend/components/VoteOnTransaction.js - FIXED VERSION untuk Wagmi v2
 import { useState, useEffect } from 'react'
 import { useReadContract, useWriteContract, useWaitForTransactionReceipt, useAccount } from 'wagmi'
 import { formatEther } from 'viem'
@@ -117,14 +117,14 @@ export default function VoteOnTransaction({ contractAddress, transactionCount, i
   // Contract writes - FIXED for Wagmi v2
   const { 
     data: voteData, 
-    writeContract: voteWriteContract, 
+    writeContract: writeVoteContract, 
     isPending: isVoteLoading,
     error: voteError 
   } = useWriteContract()
 
   const { 
     data: batchVoteData, 
-    writeContract: batchVoteWriteContract, 
+    writeContract: writeBatchVoteContract, 
     isPending: isBatchVoteLoading,
     error: batchVoteError 
   } = useWriteContract()
@@ -151,9 +151,8 @@ export default function VoteOnTransaction({ contractAddress, transactionCount, i
     try {
       const txData = []
 
-      for (let i = 0; i < Math.min(transactionCount, 20); i++) { // Limit for performance
-        // Mock contract read - dalam implementasi nyata, gunakan useReadContract untuk setiap transaksi
-        // Untuk demo, kita akan menggunakan data dummy
+      for (let i = 0; i < Math.min(transactionCount, 20); i++) { // Limit to 20 for performance
+        // Simulate transaction data - in real app, use useReadContract for each transaction
         const tx = {
           id: i,
           to: `0x${'0'.repeat(40)}`,
@@ -173,6 +172,7 @@ export default function VoteOnTransaction({ contractAddress, transactionCount, i
         }
         txData.push(tx)
       }
+      
       setTransactions(txData)
     } catch (error) {
       console.error('Error loading transactions:', error)
@@ -211,15 +211,15 @@ export default function VoteOnTransaction({ contractAddress, transactionCount, i
     try {
       console.log('🗳️ Voting on transaction:', { txId, support, contractAddress })
       
-      await voteWriteContract({
+      await writeVoteContract({
         address: contractAddress,
         abi: CONTRACT_ABI,
         functionName: 'voteOnTransaction',
-        args: [BigInt(txId), support] // Convert to BigInt for Wagmi v2
+        args: [BigInt(txId), support]
       })
     } catch (error) {
       console.error('Error voting:', error)
-      setError(`Failed to vote: ${error?.message || 'Unknown error'}`)
+      setError(`Failed to vote: ${error.message}`)
     }
   }
 
@@ -243,11 +243,10 @@ export default function VoteOnTransaction({ contractAddress, transactionCount, i
     try {
       console.log('🗳️ Batch voting:', { selectedTxIds, support, contractAddress })
       
-      // Convert transaction IDs to BigInt for Wagmi v2
       const txIdsBigInt = selectedTxIds.map(id => BigInt(id))
       const supports = Array(selectedTxIds.length).fill(support)
       
-      await batchVoteWriteContract({
+      await writeBatchVoteContract({
         address: contractAddress,
         abi: CONTRACT_ABI,
         functionName: 'batchVote',
@@ -255,7 +254,7 @@ export default function VoteOnTransaction({ contractAddress, transactionCount, i
       })
     } catch (error) {
       console.error('Error batch voting:', error)
-      setError(`Failed to batch vote: ${error?.message || 'Unknown error'}`)
+      setError(`Failed to batch vote: ${error.message}`)
     }
   }
 
@@ -330,7 +329,7 @@ export default function VoteOnTransaction({ contractAddress, transactionCount, i
     if (voteError || batchVoteError || receiptError) {
       const error = voteError || batchVoteError || receiptError
       console.error('Transaction error:', error)
-      setError(`Error: ${error?.message || 'Transaction failed'}`)
+      setError(`Error: ${error.message}`)
     }
   }, [voteError, batchVoteError, receiptError])
 
@@ -390,7 +389,7 @@ export default function VoteOnTransaction({ contractAddress, transactionCount, i
           <span className="text-red-400">{error}</span>
           <button 
             onClick={() => setError(null)}
-            className="ml-auto text-red-400 hover:text-red-300 transition-colors"
+            className="ml-auto text-red-400 hover:text-red-300"
           >
             ×
           </button>
@@ -562,7 +561,7 @@ export default function VoteOnTransaction({ contractAddress, transactionCount, i
                     <div 
                       className="bg-green-500 h-2 rounded-full transition-all"
                       style={{ 
-                        width: `${Math.min(100, (tx.yesVotes / (requiredSignatures || 2)) * 100)}%` 
+                        width: `${Math.min(100, (Number(tx.yesVotes) / Number(requiredSignatures || 2)) * 100)}%` 
                       }}
                     ></div>
                   </div>

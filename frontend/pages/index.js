@@ -1,8 +1,9 @@
-// frontend/pages/index.js - FIXED VERSION with SSR compatibility
+// frontend/pages/index.js - FIXED VERSION with BigInt compatibility
 import { useState, useEffect } from 'react'
 import { ConnectButton } from '@rainbow-me/rainbowkit'
-import { useAccount, useReadContract, useWriteContract, useWaitForTransactionReceipt } from 'wagmi'
-import { parseEther, formatEther } from 'viem'
+import { useAccount, useReadContract } from 'wagmi'
+import { formatEther } from 'viem'
+import { safeNumber, safeArrayLength } from '../utils/bigint'
 import ClientOnly from '../components/ClientOnly'
 import WalletInfo from '../components/WalletInfo'
 import TransactionList from '../components/TransactionList'
@@ -60,56 +61,11 @@ const CONTRACT_ABI = [
     "outputs": [{"internalType": "uint256", "name": "", "type": "uint256"}],
     "stateMutability": "view",
     "type": "function"
-  },
-  {
-    "inputs": [
-      {"internalType": "address", "name": "_to", "type": "address"},
-      {"internalType": "uint256", "name": "_value", "type": "uint256"},
-      {"internalType": "bytes", "name": "_data", "type": "bytes"},
-      {"internalType": "uint256", "name": "_deadline", "type": "uint256"}
-    ],
-    "name": "submitTransaction",
-    "outputs": [{"internalType": "uint256", "name": "txId", "type": "uint256"}],
-    "stateMutability": "nonpayable",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {"internalType": "uint256", "name": "_txId", "type": "uint256"},
-      {"internalType": "bool", "name": "_support", "type": "bool"}
-    ],
-    "name": "voteOnTransaction",
-    "outputs": [],
-    "stateMutability": "nonpayable",
-    "type": "function"
-  },
-  {
-    "inputs": [{"internalType": "uint256", "name": "_txId", "type": "uint256"}],
-    "name": "executeTransaction",
-    "outputs": [],
-    "stateMutability": "nonpayable",
-    "type": "function"
-  },
-  {
-    "inputs": [{"internalType": "uint256", "name": "_txId", "type": "uint256"}],
-    "name": "getTransaction",
-    "outputs": [
-      {"internalType": "address", "name": "to", "type": "address"},
-      {"internalType": "uint256", "name": "value", "type": "uint256"},
-      {"internalType": "bytes", "name": "data", "type": "bytes"},
-      {"internalType": "bool", "name": "executed", "type": "bool"},
-      {"internalType": "uint256", "name": "deadline", "type": "uint256"},
-      {"internalType": "uint256", "name": "yesVotes", "type": "uint256"},
-      {"internalType": "uint256", "name": "noVotes", "type": "uint256"},
-      {"internalType": "uint256", "name": "submissionTime", "type": "uint256"}
-    ],
-    "stateMutability": "view",
-    "type": "function"
   }
 ]
 
-// Default contract address - Updated dari hasil simulasi terbaru
-const DEFAULT_CONTRACT_ADDRESS = '0xa6aC1B96814cC56C215A60B4E604b27F65170bAF'
+// Default contract address
+const DEFAULT_CONTRACT_ADDRESS = '0x25e224D3D915108F14d05A95e690be8b588a84D4'
 
 export default function Home() {
   const [activeTab, setActiveTab] = useState('overview')
@@ -118,11 +74,11 @@ export default function Home() {
   )
   const [isValidAddress, setIsValidAddress] = useState(true)
 
-  const { address, isConnected, isConnecting, isDisconnected } = useAccount()
+  const { address, isConnected } = useAccount()
 
-  // Contract reads dengan Wagmi v2 - useReadContract
+  // Contract reads dengan Wagmi v2 - semua akan dikonversi ke Number untuk display
   const { 
-    data: signers, 
+    data: signersData, 
     error: signersError, 
     isLoading: signersLoading,
     refetch: refetchSigners 
@@ -132,12 +88,12 @@ export default function Home() {
     functionName: 'getSigners',
     query: {
       enabled: isConnected && isValidAddress,
-      refetchInterval: 30000, // Auto-refresh every 30 seconds
+      refetchInterval: 30000,
     }
   })
 
   const { 
-    data: requiredSignatures, 
+    data: requiredSignaturesData, 
     error: requiredError,
     isLoading: requiredLoading 
   } = useReadContract({
@@ -150,7 +106,7 @@ export default function Home() {
   })
 
   const { 
-    data: transactionCount, 
+    data: transactionCountData, 
     error: transactionCountError,
     isLoading: transactionCountLoading,
     refetch: refetchTransactionCount 
@@ -164,7 +120,7 @@ export default function Home() {
   })
 
   const { 
-    data: isSigner, 
+    data: isSignerData, 
     error: isSignerError,
     isLoading: isSignerLoading 
   } = useReadContract({
@@ -178,7 +134,7 @@ export default function Home() {
   })
 
   const { 
-    data: isPaused 
+    data: isPausedData 
   } = useReadContract({
     address: contractAddress,
     abi: CONTRACT_ABI,
@@ -189,7 +145,7 @@ export default function Home() {
   })
 
   const { 
-    data: proposalDuration 
+    data: proposalDurationData 
   } = useReadContract({
     address: contractAddress,
     abi: CONTRACT_ABI,
@@ -200,7 +156,7 @@ export default function Home() {
   })
 
   const { 
-    data: executionDelay 
+    data: executionDelayData 
   } = useReadContract({
     address: contractAddress,
     abi: CONTRACT_ABI,
@@ -209,6 +165,15 @@ export default function Home() {
       enabled: isConnected && isValidAddress,
     }
   })
+
+  // Convert BigInt values to safe numbers for display
+  const signers = signersData || []
+  const requiredSignatures = safeNumber(requiredSignaturesData)
+  const transactionCount = safeNumber(transactionCountData)
+  const isSigner = Boolean(isSignerData)
+  const isPaused = Boolean(isPausedData)
+  const proposalDuration = safeNumber(proposalDurationData)
+  const executionDelay = safeNumber(executionDelayData)
 
   // Validate contract address
   const validateContractAddress = (addr) => {
@@ -274,13 +239,13 @@ export default function Home() {
   const renderTabContent = () => {
     const commonProps = {
       contractAddress,
-      signers: signers || [],
-      requiredSignatures: Number(requiredSignatures || 0),
-      transactionCount: Number(transactionCount || 0),
-      isSigner: Boolean(isSigner),
-      isPaused: Boolean(isPaused),
-      proposalDuration: Number(proposalDuration || 0),
-      executionDelay: Number(executionDelay || 0)
+      signers,
+      requiredSignatures,
+      transactionCount,
+      isSigner,
+      isPaused,
+      proposalDuration,
+      executionDelay
     }
 
     switch (activeTab) {
@@ -302,7 +267,7 @@ export default function Home() {
   // Auto-refresh effect
   useEffect(() => {
     if (isConnected && isValidAddress) {
-      const interval = setInterval(refreshData, 30000) // Refresh every 30 seconds
+      const interval = setInterval(refreshData, 30000)
       return () => clearInterval(interval)
     }
   }, [isConnected, isValidAddress])
@@ -350,7 +315,7 @@ export default function Home() {
                 type="text"
                 value={contractAddress}
                 onChange={(e) => handleContractAddressChange(e.target.value)}
-                className={`input ${!isValidAddress ? 'input-error' : ''}`}
+                className={`input-primary ${!isValidAddress ? 'input-error' : ''}`}
                 placeholder="0x..."
               />
               {!isValidAddress && (
@@ -375,7 +340,7 @@ export default function Home() {
           </div>
         </div>
 
-        {/* Main Content - Wrapped with ClientOnly to prevent SSR issues */}
+        {/* Main Content */}
         <ClientOnly fallback={
           <div className="text-center py-16">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-500 mx-auto mb-4"></div>
@@ -424,19 +389,19 @@ export default function Home() {
                       <div className="flex justify-between items-center">
                         <span className="text-gray-400 text-sm">Signers</span>
                         <span className="text-white font-medium">
-                          {signers?.length || 0}
+                          {safeArrayLength(signers)}
                         </span>
                       </div>
                       <div className="flex justify-between items-center">
                         <span className="text-gray-400 text-sm">Required</span>
                         <span className="text-white font-medium">
-                          {Number(requiredSignatures || 0)}
+                          {requiredSignatures}
                         </span>
                       </div>
                       <div className="flex justify-between items-center">
                         <span className="text-gray-400 text-sm">Transactions</span>
                         <span className="text-white font-medium">
-                          {Number(transactionCount || 0)}
+                          {transactionCount}
                         </span>
                       </div>
                       <div className="flex justify-between items-center">
@@ -496,7 +461,6 @@ export default function Home() {
                       </button>
                     </div>
                   ) : (
-                    /* Tab Content */
                     <div className="animate-fade-in">
                       {renderTabContent()}
                     </div>
