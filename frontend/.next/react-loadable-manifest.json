@@ -1,4 +1,10 @@
 {
+  "components\\WalletInfo.js -> ethers": {
+    "id": "components\\WalletInfo.js -> ethers",
+    "files": [
+      "static/chunks/node_modules_ethers_lib_esm_index_js.js"
+    ]
+  },
   "node_modules\\@rainbow-me\\rainbowkit\\dist\\index.js -> ./Arc-VDBY7LNS.js": {
     "id": "node_modules\\@rainbow-me\\rainbowkit\\dist\\index.js -> ./Arc-VDBY7LNS.js",
     "files": [

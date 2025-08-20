@@ -139,8 +139,8 @@ async function main(): Promise<DeploymentResult> {
   if (networkName === "sepolia") {
     initialSigners = [
       deployer.address,
-      "0x70997970C51812dc3A010C7d01b50e0d17dc79C8", // Replace with actual addresses
-      "0x3C44CdDdB6a900fa2b585dd299e03d12FA4293BC"  // Replace with actual addresses
+      "0xDD593Be711edE50b1624289DD1eED67bF84Eb51d", // Replace with actual addresses
+      "0x7131ddDbC0CE76E61Fce593c53CEdA99621a531D"  // Replace with actual addresses
     ];
   } else {
     const signers = await ethers.getSigners();
