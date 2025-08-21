@@ -1,0 +1,30 @@
+{
+  "network": "sepolia",
+  "chainId": 11155111,
+  "deployedAt": "2025-08-20T19:24:13.145Z",
+  "deployer": "0x965D76AB62767C2246c96D741c57f202E8d40000",
+  "deploymentMethod": "Standard deployment (no linking needed)",
+  "libraryLinking": false,
+  "contracts": {
+    "GasOptimizer": {
+      "address": "0x344ddd16155Bf3E680C93C37d75200bD13f9b35A",
+      "txHash": "0x883e448bf971f77a23c18b6b8f42aa6b9322a37021bee448a47acd6c05e8f618"
+    },
+    "DAOMultiSigWallet": {
+      "address": "0x87F52E9dDbB49598D1E29819dEFbC5Ef17C08412",
+      "txHash": "0x6f013e1a9f5a483a9c360fde250758963991d87f01e78de7280f3bb38a26ebdf",
+      "initialSigners": [
+        "0x965D76AB62767C2246c96D741c57f202E8d40000",
+        "0xDD593Be711edE50b1624289DD1eED67bF84Eb51d",
+        "0x7131ddDbC0CE76E61Fce593c53CEdA99621a531D"
+      ],
+      "requiredSignatures": 2,
+      "walletName": "DAO MultiSig Wallet",
+      "walletVersion": "1.0.0"
+    }
+  },
+  "gasUsage": {
+    "gasOptimizer": "63360",
+    "daoWallet": "3228115"
+  }
+}

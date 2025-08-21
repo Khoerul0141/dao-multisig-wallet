@@ -1,4 +1,16 @@
 {
+  "components\\TransactionList.js -> ethers": {
+    "id": "components\\TransactionList.js -> ethers",
+    "files": [
+      "static/chunks/node_modules_ethers_lib_esm_index_js.js"
+    ]
+  },
+  "components\\VoteOnTransaction.js -> ethers": {
+    "id": "components\\VoteOnTransaction.js -> ethers",
+    "files": [
+      "static/chunks/node_modules_ethers_lib_esm_index_js.js"
+    ]
+  },
   "components\\WalletInfo.js -> ethers": {
     "id": "components\\WalletInfo.js -> ethers",
     "files": [

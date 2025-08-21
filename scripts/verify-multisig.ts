@@ -3,7 +3,7 @@ import { run } from "hardhat";
 
 async function main() {
   await run("verify:verify", {
-    address: "0xffB3fB252fb7D97a467Cbc85a977581044bdB0a1",
+    address: "0x785003257d808B76702c5072AAAd6Bd432D64a23",
     contract: "contracts/DAOMultiSigWallet.sol:DAOMultiSigWallet",
     constructorArguments: [
       [

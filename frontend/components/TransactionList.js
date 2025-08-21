@@ -1,6 +1,6 @@
-// file frontend/components/TransactionList.js
+// frontend/components/TransactionList.js - FIXED VERSION dengan contract reads yang benar
 import { useState, useEffect } from 'react'
-import { useReadContract, useWriteContract, useWaitForTransactionReceipt } from 'wagmi'
+import { useReadContract, useWriteContract, useWaitForTransactionReceipt, useAccount } from 'wagmi'
 import { formatEther } from 'viem'
 import { 
   ClockIcon, 
@@ -14,7 +14,8 @@ import {
   CalendarIcon,
   PlayIcon,
   PauseIcon,
-  InformationCircleIcon
+  InformationCircleIcon,
+  ArrowPathIcon
 } from '@heroicons/react/24/outline'
 
 // Contract ABI untuk membaca transaksi
@@ -48,24 +49,79 @@ const CONTRACT_ABI = [
     "type": "function"
   },
   {
+    "inputs": [
+      {"internalType": "uint256", "name": "_txId", "type": "uint256"},
+      {"internalType": "address", "name": "_voter", "type": "address"}
+    ],
+    "name": "hasVoted",
+    "outputs": [{"internalType": "bool", "name": "", "type": "bool"}],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {"internalType": "uint256", "name": "_txId", "type": "uint256"},
+      {"internalType": "address", "name": "_voter", "type": "address"}
+    ],
+    "name": "getVote",
+    "outputs": [{"internalType": "bool", "name": "", "type": "bool"}],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
     "inputs": [{"internalType": "uint256", "name": "_txId", "type": "uint256"}],
     "name": "executeTransaction",
     "outputs": [],
     "stateMutability": "nonpayable",
     "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "transactionCount",
+    "outputs": [{"internalType": "uint256", "name": "", "type": "uint256"}],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "getRequiredSignatures",
+    "outputs": [{"internalType": "uint256", "name": "", "type": "uint256"}],
+    "stateMutability": "view",
+    "type": "function"
   }
 ]
 
 export default function TransactionList({ contractAddress, transactionCount, requiredSignatures, isSigner }) {
+  const { address } = useAccount()
+  
   const [transactions, setTransactions] = useState([])
   const [loading, setLoading] = useState(true)
   const [filter, setFilter] = useState('all') // all, pending, executable, executed, expired
   const [sortBy, setSortBy] = useState('newest') // newest, oldest, amount
   const [selectedTx, setSelectedTx] = useState(null)
   const [showDetails, setShowDetails] = useState(false)
+  const [error, setError] = useState(null)
+
+  // Contract reads untuk data yang akurat
+  const { data: actualTransactionCount, refetch: refetchTxCount } = useReadContract({
+    address: contractAddress,
+    abi: CONTRACT_ABI,
+    functionName: 'transactionCount',
+    query: {
+      enabled: !!contractAddress && contractAddress !== '0x...',
+    }
+  })
+
+  const { data: actualRequiredSignatures } = useReadContract({
+    address: contractAddress,
+    abi: CONTRACT_ABI,
+    functionName: 'getRequiredSignatures',
+    query: {
+      enabled: !!contractAddress && contractAddress !== '0x...',
+    }
+  })
 
   // Contract write untuk execute transaction
-  
   const { 
     data: executeData, 
     writeContract: executeTransaction, 
@@ -77,44 +133,121 @@ export default function TransactionList({ contractAddress, transactionCount, req
     hash: executeData,
   })
 
-  // Load semua data transaksi
+  // FIXED: Load REAL transactions data from contract
   const loadTransactions = async () => {
-    if (!contractAddress || transactionCount === 0) {
+    if (!contractAddress || contractAddress === '0x...' || !actualTransactionCount) {
       setLoading(false)
       return
     }
 
+    console.log('🔄 Loading transaction list from contract...')
     setLoading(true)
-    const txData = []
-
+    setError(null)
+    
     try {
-      // Dalam implementasi nyata, Anda akan menggunakan useContractRead untuk setiap transaksi
-      // Untuk demo ini, kita akan menggunakan data simulasi
-      for (let i = 0; i < transactionCount; i++) {
-        // Simulasi data transaksi - ganti dengan pembacaan contract yang sebenarnya
-        const tx = {
-          id: i,
-          to: `0x${Math.random().toString(16).slice(2, 42).padStart(40, '0')}`,
-          value: (Math.random() * 10).toFixed(4),
-          data: '0x',
-          executed: Math.random() > 0.7,
-          deadline: Date.now() + (Math.random() * 7 * 24 * 60 * 60 * 1000), // Random dalam 7 hari
-          yesVotes: Math.floor(Math.random() * 5),
-          noVotes: Math.floor(Math.random() * 2),
-          submissionTime: Date.now() - (Math.random() * 7 * 24 * 60 * 60 * 1000),
-          canVote: Math.random() > 0.5,
-          canExecute: Math.random() > 0.8,
-          isExpired: Math.random() > 0.9,
-          votingTimeLeft: Math.random() * 7 * 24 * 60 * 60,
-          submitter: `0x${Math.random().toString(16).slice(2, 42).padStart(40, '0')}`,
-          txHash: Math.random() > 0.5 ? `0x${Math.random().toString(16).slice(2).padStart(64, '0')}` : null
-        }
-        txData.push(tx)
+      const txCount = Number(actualTransactionCount)
+      console.log(`📊 Total transactions: ${txCount}`)
+      
+      if (txCount === 0) {
+        setTransactions([])
+        setLoading(false)
+        return
       }
 
+      const txData = []
+
+      // Load real transaction data from contract
+      for (let i = 0; i < txCount; i++) {
+        try {
+          console.log(`📋 Loading transaction ${i}...`)
+          
+          // Get transaction details menggunakan ethers
+          const txDetails = await (window.ethereum ? 
+            (async () => {
+              const provider = new (await import('ethers')).ethers.BrowserProvider(window.ethereum)
+              const contract = new (await import('ethers')).ethers.Contract(contractAddress, CONTRACT_ABI, provider)
+              
+              const [txData, statusData, hasVotedData, voteData] = await Promise.all([
+                contract.getTransaction(i),
+                contract.getTransactionStatus(i),
+                contract.hasVoted(i, address || '0x0000000000000000000000000000000000000000'),
+                address ? contract.getVote(i, address).catch(() => false) : Promise.resolve(false)
+              ])
+              
+              return {
+                transaction: txData,
+                status: statusData,
+                hasVoted: hasVotedData,
+                userVote: voteData
+              }
+            })() :
+            Promise.reject(new Error('Ethereum provider not available'))
+          )
+
+          // Get block info untuk mendapatkan timestamp yang lebih akurat
+          let submitter = 'Unknown'
+          let txHash = null
+          
+          try {
+            // Coba ambil event submission untuk mendapatkan submitter
+            const provider = new (await import('ethers')).ethers.BrowserProvider(window.ethereum)
+            const contract = new (await import('ethers')).ethers.Contract(contractAddress, CONTRACT_ABI, provider)
+            
+            // Get events dari block tertentu (simplified)
+            const currentBlock = await provider.getBlockNumber()
+            const fromBlock = Math.max(0, currentBlock - 10000) // Last 10k blocks
+            
+            const filter = contract.filters.TransactionSubmitted(i)
+            const events = await contract.queryFilter(filter, fromBlock, currentBlock)
+            
+            if (events.length > 0) {
+              submitter = events[0].args[1] // submitter address
+              txHash = events[0].transactionHash
+            }
+          } catch (eventError) {
+            console.log('Could not fetch submission event for tx', i)
+          }
+
+          const tx = {
+            id: i,
+            to: txDetails.transaction.to,
+            value: txDetails.transaction.value.toString(),
+            data: txDetails.transaction.data,
+            executed: txDetails.transaction.executed,
+            deadline: Number(txDetails.transaction.deadline) * 1000, // Convert to milliseconds
+            yesVotes: Number(txDetails.transaction.yesVotes),
+            noVotes: Number(txDetails.transaction.noVotes),
+            submissionTime: Number(txDetails.transaction.submissionTime) * 1000,
+            canVote: txDetails.status.canVote,
+            canExecute: txDetails.status.canExecute,
+            isExpired: txDetails.status.isExpired,
+            votingTimeLeft: Number(txDetails.status.votingTimeLeft),
+            hasVoted: txDetails.hasVoted,
+            userVote: txDetails.userVote,
+            submitter: submitter,
+            txHash: txHash
+          }
+          
+          console.log(`✅ Transaction ${i} loaded:`, {
+            executed: tx.executed,
+            yesVotes: tx.yesVotes,
+            noVotes: tx.noVotes,
+            canExecute: tx.canExecute,
+            isExpired: tx.isExpired
+          })
+          
+          txData.push(tx)
+        } catch (error) {
+          console.error(`❌ Error loading transaction ${i}:`, error)
+          // Continue with next transaction
+        }
+      }
+      
+      console.log(`✅ Loaded ${txData.length} transactions from contract`)
       setTransactions(txData)
     } catch (error) {
-      console.error('Error loading transactions:', error)
+      console.error('❌ Error loading transactions:', error)
+      setError('Failed to load transactions from contract: ' + error.message)
     } finally {
       setLoading(false)
     }
@@ -148,7 +281,7 @@ export default function TransactionList({ contractAddress, transactionCount, req
         filtered.sort((a, b) => a.submissionTime - b.submissionTime)
         break
       case 'amount':
-        filtered.sort((a, b) => parseFloat(b.value) - parseFloat(a.value))
+        filtered.sort((a, b) => parseFloat(formatEther(BigInt(b.value))) - parseFloat(formatEther(BigInt(a.value))))
         break
       default: // newest
         filtered.sort((a, b) => b.submissionTime - a.submissionTime)
@@ -233,11 +366,12 @@ export default function TransactionList({ contractAddress, transactionCount, req
     }
 
     try {
+      console.log('🚀 Executing transaction:', txId)
       await executeTransaction({
         address: contractAddress,
         abi: CONTRACT_ABI,
         functionName: 'executeTransaction',
-        args: [txId]
+        args: [BigInt(txId)]
       })
     } catch (error) {
       console.error('Error executing transaction:', error)
@@ -247,14 +381,20 @@ export default function TransactionList({ contractAddress, transactionCount, req
 
   // Load data on mount and when dependencies change
   useEffect(() => {
-    loadTransactions()
-  }, [contractAddress, transactionCount])
+    if (contractAddress && actualTransactionCount !== undefined) {
+      loadTransactions()
+    }
+  }, [contractAddress, actualTransactionCount, address])
 
   // Refresh after successful execution
   useEffect(() => {
     if (isSuccess) {
-      loadTransactions()
-      alert('Transaction executed successfully!')
+      console.log('✅ Transaction executed successfully, reloading data...')
+      setTimeout(() => {
+        loadTransactions()
+        refetchTxCount()
+        alert('Transaction executed successfully!')
+      }, 2000)
     }
   }, [isSuccess])
 
@@ -262,12 +402,12 @@ export default function TransactionList({ contractAddress, transactionCount, req
     return (
       <div className="text-center py-8">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-500 mx-auto mb-4"></div>
-        <p className="text-gray-300">Loading transactions...</p>
+        <p className="text-gray-300">Loading transactions from blockchain...</p>
       </div>
     )
   }
 
-  if (transactionCount === 0) {
+  if (!actualTransactionCount || Number(actualTransactionCount) === 0) {
     return (
       <div className="text-center py-12">
         <DocumentTextIcon className="h-16 w-16 text-gray-500 mx-auto mb-4" />
@@ -297,8 +437,36 @@ export default function TransactionList({ contractAddress, transactionCount, req
           Transaction History
         </h2>
         <p className="text-gray-300">
-          View and manage all wallet transactions ({transactionCount} total)
+          View and manage all wallet transactions ({Number(actualTransactionCount)} total)
         </p>
+      </div>
+
+      {/* Error Display */}
+      {error && (
+        <div className="bg-red-500/20 border border-red-500 rounded-lg p-4 flex items-center">
+          <ExclamationTriangleIcon className="h-5 w-5 text-red-400 mr-2" />
+          <span className="text-red-400">{error}</span>
+          <button 
+            onClick={() => setError(null)}
+            className="ml-auto text-red-400 hover:text-red-300"
+          >
+            ×
+          </button>
+        </div>
+      )}
+
+      {/* Debug Info */}
+      <div className="bg-blue-500/20 border border-blue-500 rounded-lg p-4 text-sm">
+        <h4 className="text-blue-400 font-medium mb-2">Transaction List Debug:</h4>
+        <div className="text-blue-300 space-y-1">
+          <div>Contract: {contractAddress}</div>
+          <div>Actual Transaction Count: {Number(actualTransactionCount || 0)}</div>
+          <div>Loaded Transactions: {transactions.length}</div>
+          <div>Filtered Transactions: {filteredTransactions.length}</div>
+          <div>Required Signatures: {Number(actualRequiredSignatures || requiredSignatures || 0)}</div>
+          <div>User Address: {address}</div>
+          <div>Is Signer: {isSigner ? 'Yes' : 'No'}</div>
+        </div>
       </div>
 
       {/* Controls */}
@@ -328,7 +496,7 @@ export default function TransactionList({ contractAddress, transactionCount, req
             ))}
           </div>
 
-          {/* Sort */}
+          {/* Sort & Refresh */}
           <div className="flex items-center space-x-2">
             <span className="text-white text-sm font-medium">Sort:</span>
             <select
@@ -340,6 +508,15 @@ export default function TransactionList({ contractAddress, transactionCount, req
               <option value="oldest" className="bg-gray-800">Oldest First</option>
               <option value="amount" className="bg-gray-800">Highest Amount</option>
             </select>
+            
+            <button
+              onClick={loadTransactions}
+              disabled={loading}
+              className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded-lg text-sm transition-colors disabled:opacity-50 flex items-center"
+            >
+              <ArrowPathIcon className={`h-4 w-4 mr-1 ${loading ? 'animate-spin' : ''}`} />
+              Refresh
+            </button>
           </div>
         </div>
 
@@ -419,7 +596,7 @@ export default function TransactionList({ contractAddress, transactionCount, req
                         </div>
                         <div>
                           <span className="text-gray-400">Amount:</span>
-                          <div className="text-white font-bold">{tx.value} ETH</div>
+                          <div className="text-white font-bold">{parseFloat(formatEther(BigInt(tx.value))).toFixed(4)} ETH</div>
                         </div>
                         <div>
                           <span className="text-gray-400">Submitted:</span>
@@ -431,7 +608,7 @@ export default function TransactionList({ contractAddress, transactionCount, req
 
                   <div className="text-right">
                     <div className="text-2xl font-bold text-white mb-1">
-                      {formatEther(tx.value)} ETH
+                      {parseFloat(formatEther(BigInt(tx.value))).toFixed(4)} ETH
                     </div>
                     {tx.deadline && (
                       <div className="text-gray-400 text-sm">
@@ -446,7 +623,7 @@ export default function TransactionList({ contractAddress, transactionCount, req
                   <div className="flex items-center justify-between mb-2">
                     <span className="text-gray-300 text-sm font-medium">Voting Progress</span>
                     <span className="text-gray-400 text-sm">
-                      {tx.yesVotes + tx.noVotes} / {requiredSignatures} votes
+                      {tx.yesVotes + tx.noVotes} / {Number(actualRequiredSignatures || requiredSignatures || 2)} votes
                     </span>
                   </div>
                   
@@ -460,7 +637,7 @@ export default function TransactionList({ contractAddress, transactionCount, req
                       <span className="text-red-400 font-medium">{tx.noVotes} No</span>
                     </div>
                     <div className="text-gray-400 text-sm">
-                      ({requiredSignatures} required)
+                      ({Number(actualRequiredSignatures || requiredSignatures || 2)} required)
                     </div>
                   </div>
 
@@ -469,11 +646,11 @@ export default function TransactionList({ contractAddress, transactionCount, req
                     <div className="flex h-full">
                       <div 
                         className="bg-green-500 transition-all duration-300"
-                        style={{ width: `${Math.min(100, (tx.yesVotes / requiredSignatures) * 100)}%` }}
+                        style={{ width: `${Math.min(100, (tx.yesVotes / Number(actualRequiredSignatures || requiredSignatures || 2)) * 100)}%` }}
                       ></div>
                       <div 
                         className="bg-red-500 transition-all duration-300"
-                        style={{ width: `${Math.min(100 - (tx.yesVotes / requiredSignatures) * 100, (tx.noVotes / requiredSignatures) * 100)}%` }}
+                        style={{ width: `${Math.min(100 - (tx.yesVotes / Number(actualRequiredSignatures || requiredSignatures || 2)) * 100, (tx.noVotes / Number(actualRequiredSignatures || requiredSignatures || 2)) * 100)}%` }}
                       ></div>
                     </div>
                   </div>
@@ -495,7 +672,7 @@ export default function TransactionList({ contractAddress, transactionCount, req
                     
                     {tx.txHash && (
                       <a
-                        href={`https://etherscan.io/tx/${tx.txHash}`}
+                        href={`https://sepolia.etherscan.io/tx/${tx.txHash}`}
                         target="_blank"
                         rel="noopener noreferrer"
                         className="text-blue-400 hover:text-blue-300 text-sm font-medium transition-colors flex items-center space-x-1"
@@ -565,12 +742,18 @@ export default function TransactionList({ contractAddress, transactionCount, req
                       </div>
                       <div className="flex justify-between">
                         <span className="text-gray-400">Amount:</span>
-                        <span className="text-white font-bold">{selectedTx.value} ETH</span>
+                        <span className="text-white font-bold">{parseFloat(formatEther(BigInt(selectedTx.value))).toFixed(4)} ETH</span>
                       </div>
                       <div className="flex justify-between">
                         <span className="text-gray-400">Status:</span>
                         <span className={getTransactionStatusInfo(selectedTx).color}>
                           {getTransactionStatusInfo(selectedTx).status}
+                        </span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-gray-400">Submitter:</span>
+                        <span className="text-white font-mono text-xs">
+                          {selectedTx.submitter !== 'Unknown' ? truncateAddress(selectedTx.submitter) : 'Unknown'}
                         </span>
                       </div>
                     </div>
@@ -591,13 +774,17 @@ export default function TransactionList({ contractAddress, transactionCount, req
                         <span className="text-gray-400">Time Left:</span>
                         <span className="text-white">{formatTimeRemaining(selectedTx.deadline)}</span>
                       </div>
+                      <div className="flex justify-between">
+                        <span className="text-gray-400">Voting Time Left:</span>
+                        <span className="text-white">{formatTimeRemaining(Date.now() + selectedTx.votingTimeLeft * 1000)}</span>
+                      </div>
                     </div>
                   </div>
                 </div>
 
                 <div className="bg-white/10 rounded-lg p-4">
                   <h4 className="text-white font-medium mb-2">Voting Summary</h4>
-                  <div className="grid grid-cols-3 gap-4 text-center">
+                  <div className="grid grid-cols-3 gap-4 text-center mb-4">
                     <div>
                       <div className="text-2xl font-bold text-green-400">{selectedTx.yesVotes}</div>
                       <div className="text-gray-400 text-sm">Yes Votes</div>
@@ -607,18 +794,90 @@ export default function TransactionList({ contractAddress, transactionCount, req
                       <div className="text-gray-400 text-sm">No Votes</div>
                     </div>
                     <div>
-                      <div className="text-2xl font-bold text-blue-400">{requiredSignatures}</div>
+                      <div className="text-2xl font-bold text-blue-400">{Number(actualRequiredSignatures || requiredSignatures || 2)}</div>
                       <div className="text-gray-400 text-sm">Required</div>
+                    </div>
+                  </div>
+                  
+                  {/* Detailed Progress Bar */}
+                  <div className="w-full bg-white/20 rounded-full h-3 overflow-hidden">
+                    <div className="flex h-full">
+                      <div 
+                        className="bg-green-500 transition-all duration-300 flex items-center justify-center text-white text-xs font-bold"
+                        style={{ width: `${Math.min(100, (selectedTx.yesVotes / Number(actualRequiredSignatures || requiredSignatures || 2)) * 100)}%` }}
+                      >
+                        {selectedTx.yesVotes > 0 && selectedTx.yesVotes}
+                      </div>
+                      <div 
+                        className="bg-red-500 transition-all duration-300 flex items-center justify-center text-white text-xs font-bold"
+                        style={{ width: `${Math.min(100 - (selectedTx.yesVotes / Number(actualRequiredSignatures || requiredSignatures || 2)) * 100, (selectedTx.noVotes / Number(actualRequiredSignatures || requiredSignatures || 2)) * 100)}%` }}
+                      >
+                        {selectedTx.noVotes > 0 && selectedTx.noVotes}
+                      </div>
                     </div>
                   </div>
                 </div>
 
+                <div className="bg-white/10 rounded-lg p-4">
+                  <h4 className="text-white font-medium mb-2">Execution Status</h4>
+                  <div className="space-y-2 text-sm">
+                    <div className="flex justify-between">
+                      <span className="text-gray-400">Can Vote:</span>
+                      <span className={selectedTx.canVote ? 'text-green-400' : 'text-red-400'}>
+                        {selectedTx.canVote ? 'Yes' : 'No'}
+                      </span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-400">Can Execute:</span>
+                      <span className={selectedTx.canExecute ? 'text-green-400' : 'text-red-400'}>
+                        {selectedTx.canExecute ? 'Yes' : 'No'}
+                      </span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-400">Is Expired:</span>
+                      <span className={selectedTx.isExpired ? 'text-red-400' : 'text-green-400'}>
+                        {selectedTx.isExpired ? 'Yes' : 'No'}
+                      </span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-400">Executed:</span>
+                      <span className={selectedTx.executed ? 'text-green-400' : 'text-yellow-400'}>
+                        {selectedTx.executed ? 'Yes' : 'No'}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                {selectedTx.hasVoted && (
+                  <div className="bg-blue-500/20 border border-blue-500 rounded-lg p-4">
+                    <h4 className="text-blue-400 font-medium mb-2">Your Vote</h4>
+                    <div className={`flex items-center text-lg font-bold ${
+                      selectedTx.userVote ? 'text-green-400' : 'text-red-400'
+                    }`}>
+                      {selectedTx.userVote ? (
+                        <>
+                          <CheckCircleIcon className="h-5 w-5 mr-2" />
+                          <span>YES</span>
+                        </>
+                      ) : (
+                        <>
+                          <XCircleIcon className="h-5 w-5 mr-2" />
+                          <span>NO</span>
+                        </>
+                      )}
+                    </div>
+                  </div>
+                )}
+
                 {selectedTx.data && selectedTx.data !== '0x' && (
                   <div className="bg-white/10 rounded-lg p-4">
                     <h4 className="text-white font-medium mb-2">Transaction Data</h4>
-                    <div className="bg-gray-900 rounded p-3 font-mono text-sm text-green-400 break-all">
+                    <div className="bg-gray-900 rounded p-3 font-mono text-sm text-green-400 break-all max-h-32 overflow-y-auto">
                       {selectedTx.data}
                     </div>
+                    <p className="text-gray-400 text-xs mt-2">
+                      Contract call data (if any)
+                    </p>
                   </div>
                 )}
               </div>
@@ -632,13 +891,26 @@ export default function TransactionList({ contractAddress, transactionCount, req
                 </button>
                 {selectedTx.txHash && (
                   <a
-                    href={`https://etherscan.io/tx/${selectedTx.txHash}`}
+                    href={`https://sepolia.etherscan.io/tx/${selectedTx.txHash}`}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
                   >
-                    View on Explorer
+                    View on Etherscan
                   </a>
+                )}
+                {isSigner && selectedTx.canExecute && !selectedTx.executed && (
+                  <button
+                    onClick={() => {
+                      setShowDetails(false)
+                      handleExecuteTransaction(selectedTx.id)
+                    }}
+                    disabled={isExecuteLoading || isWaitingForTx}
+                    className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-colors disabled:opacity-50 flex items-center space-x-2"
+                  >
+                    <PlayIcon className="h-4 w-4" />
+                    <span>Execute Transaction</span>
+                  </button>
                 )}
               </div>
             </div>

@@ -1,4 +1,4 @@
-// file frontend/components/VoteOnTransaction.js - FIXED VERSION untuk Wagmi v2
+// frontend/components/VoteOnTransaction.js - FIXED VERSION dengan contract reads yang benar
 import { useState, useEffect } from 'react'
 import { useReadContract, useWriteContract, useWaitForTransactionReceipt, useAccount } from 'wagmi'
 import { formatEther } from 'viem'
@@ -15,7 +15,7 @@ import {
   UserGroupIcon
 } from '@heroicons/react/24/outline'
 
-// Contract ABI
+// Contract ABI - LENGKAP
 const CONTRACT_ABI = [
   {
     "inputs": [
@@ -87,6 +87,13 @@ const CONTRACT_ABI = [
   },
   {
     "inputs": [],
+    "name": "transactionCount",
+    "outputs": [{"internalType": "uint256", "name": "", "type": "uint256"}],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
     "name": "getRequiredSignatures",
     "outputs": [{"internalType": "uint256", "name": "", "type": "uint256"}],
     "stateMutability": "view",
@@ -100,11 +107,11 @@ export default function VoteOnTransaction({ contractAddress, transactionCount, i
   const [selectedTxIds, setSelectedTxIds] = useState([])
   const [batchVoteMode, setBatchVoteMode] = useState(false)
   const [transactions, setTransactions] = useState([])
-  const [filter, setFilter] = useState('all') // all, pending, executable, expired
+  const [filter, setFilter] = useState('all')
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
 
-  // Contract reads
+  // Contract reads - REAL DATA
   const { data: requiredSignatures } = useReadContract({
     address: contractAddress,
     abi: CONTRACT_ABI,
@@ -114,7 +121,16 @@ export default function VoteOnTransaction({ contractAddress, transactionCount, i
     }
   })
 
-  // Contract writes - FIXED for Wagmi v2
+  const { data: actualTransactionCount } = useReadContract({
+    address: contractAddress,
+    abi: CONTRACT_ABI,
+    functionName: 'transactionCount',
+    query: {
+      enabled: !!contractAddress && contractAddress !== '0x...',
+    }
+  })
+
+  // Contract writes
   const { 
     data: voteData, 
     writeContract: writeVoteContract, 
@@ -138,45 +154,97 @@ export default function VoteOnTransaction({ contractAddress, transactionCount, i
     hash: voteData || batchVoteData,
   })
 
-  // Load transactions data
+  // FIXED: Load REAL transactions data from contract
   const loadTransactions = async () => {
-    if (!contractAddress || contractAddress === '0x...' || transactionCount === 0) {
+    if (!contractAddress || contractAddress === '0x...' || !actualTransactionCount) {
       setLoading(false)
       return
     }
 
+    console.log('🔄 Loading transactions from contract...')
     setLoading(true)
     setError(null)
     
     try {
+      const txCount = Number(actualTransactionCount)
+      console.log(`📊 Total transactions: ${txCount}`)
+      
+      if (txCount === 0) {
+        setTransactions([])
+        setLoading(false)
+        return
+      }
+
       const txData = []
 
-      for (let i = 0; i < Math.min(transactionCount, 20); i++) { // Limit to 20 for performance
-        // Simulate transaction data - in real app, use useReadContract for each transaction
-        const tx = {
-          id: i,
-          to: `0x${'0'.repeat(40)}`,
-          value: '1.0',
-          data: '0x',
-          executed: Math.random() > 0.8,
-          deadline: Date.now() + 86400000 * (1 + Math.random() * 7), // 1-8 days
-          yesVotes: Math.floor(Math.random() * 3),
-          noVotes: Math.floor(Math.random() * 2),
-          submissionTime: Date.now() - Math.random() * 86400000 * 3, // Last 3 days
-          canVote: Math.random() > 0.3,
-          canExecute: Math.random() > 0.7,
-          isExpired: Math.random() > 0.9,
-          votingTimeLeft: Math.random() * 86400 * 7, // Up to 7 days
-          hasVoted: Math.random() > 0.6,
-          userVote: Math.random() > 0.5
+      // Load real transaction data from contract
+      for (let i = 0; i < txCount; i++) {
+        try {
+          console.log(`📋 Loading transaction ${i}...`)
+          
+          // Get transaction details
+          const txDetails = await (window.ethereum ? 
+            // Use ethers if available
+            (async () => {
+              const provider = new (await import('ethers')).ethers.BrowserProvider(window.ethereum)
+              const contract = new (await import('ethers')).ethers.Contract(contractAddress, CONTRACT_ABI, provider)
+              
+              const [txData, statusData, hasVotedData, voteData] = await Promise.all([
+                contract.getTransaction(i),
+                contract.getTransactionStatus(i),
+                contract.hasVoted(i, address || '0x0000000000000000000000000000000000000000'),
+                address ? contract.getVote(i, address).catch(() => false) : Promise.resolve(false)
+              ])
+              
+              return {
+                transaction: txData,
+                status: statusData,
+                hasVoted: hasVotedData,
+                userVote: voteData
+              }
+            })() :
+            // Fallback to wagmi (might not work for multiple calls)
+            Promise.reject(new Error('Ethereum provider not available'))
+          )
+
+          const tx = {
+            id: i,
+            to: txDetails.transaction.to,
+            value: txDetails.transaction.value.toString(),
+            data: txDetails.transaction.data,
+            executed: txDetails.transaction.executed,
+            deadline: Number(txDetails.transaction.deadline) * 1000, // Convert to milliseconds
+            yesVotes: Number(txDetails.transaction.yesVotes),
+            noVotes: Number(txDetails.transaction.noVotes),
+            submissionTime: Number(txDetails.transaction.submissionTime) * 1000,
+            canVote: txDetails.status.canVote,
+            canExecute: txDetails.status.canExecute,
+            isExpired: txDetails.status.isExpired,
+            votingTimeLeft: Number(txDetails.status.votingTimeLeft),
+            hasVoted: txDetails.hasVoted,
+            userVote: txDetails.userVote
+          }
+          
+          console.log(`✅ Transaction ${i} loaded:`, {
+            executed: tx.executed,
+            yesVotes: tx.yesVotes,
+            noVotes: tx.noVotes,
+            hasVoted: tx.hasVoted,
+            canVote: tx.canVote
+          })
+          
+          txData.push(tx)
+        } catch (error) {
+          console.error(`❌ Error loading transaction ${i}:`, error)
+          // Continue with next transaction
         }
-        txData.push(tx)
       }
       
+      console.log(`✅ Loaded ${txData.length} transactions from contract`)
       setTransactions(txData)
     } catch (error) {
-      console.error('Error loading transactions:', error)
-      setError('Failed to load transactions')
+      console.error('❌ Error loading transactions:', error)
+      setError('Failed to load transactions from contract: ' + error.message)
     } finally {
       setLoading(false)
     }
@@ -196,7 +264,7 @@ export default function VoteOnTransaction({ contractAddress, transactionCount, i
     }
   })
 
-  // Handle single vote - FIXED for Wagmi v2
+  // Handle single vote
   const handleVote = async (txId, support) => {
     if (!isSigner) {
       alert('Anda harus menjadi signer untuk voting')
@@ -223,7 +291,7 @@ export default function VoteOnTransaction({ contractAddress, transactionCount, i
     }
   }
 
-  // Handle batch vote - FIXED for Wagmi v2
+  // Handle batch vote
   const handleBatchVote = async (support) => {
     if (!isSigner) {
       alert('Anda harus menjadi signer untuk voting')
@@ -235,13 +303,8 @@ export default function VoteOnTransaction({ contractAddress, transactionCount, i
       return
     }
 
-    if (!contractAddress || contractAddress === '0x...') {
-      alert('Invalid contract address')
-      return
-    }
-
     try {
-      console.log('🗳️ Batch voting:', { selectedTxIds, support, contractAddress })
+      console.log('🗳️ Batch voting:', { selectedTxIds, support })
       
       const txIdsBigInt = selectedTxIds.map(id => BigInt(id))
       const supports = Array(selectedTxIds.length).fill(support)
@@ -265,19 +328,6 @@ export default function VoteOnTransaction({ contractAddress, transactionCount, i
         ? prev.filter(id => id !== txId)
         : [...prev, txId]
     )
-  }
-
-  // Select all filtered transactions
-  const selectAllFiltered = () => {
-    const eligibleTxIds = filteredTransactions
-      .filter(tx => tx.canVote && !tx.hasVoted)
-      .map(tx => tx.id)
-    setSelectedTxIds(eligibleTxIds)
-  }
-
-  // Clear selection
-  const clearSelection = () => {
-    setSelectedTxIds([])
   }
 
   // Format time remaining
@@ -309,18 +359,23 @@ export default function VoteOnTransaction({ contractAddress, transactionCount, i
     return 'Voting Active'
   }
 
-  // Load data on mount
+  // Load data on mount and when dependencies change
   useEffect(() => {
-    loadTransactions()
-  }, [contractAddress, transactionCount])
+    if (contractAddress && actualTransactionCount !== undefined) {
+      loadTransactions()
+    }
+  }, [contractAddress, actualTransactionCount, address])
 
-  // Handle success
+  // Handle success - RELOAD DATA
   useEffect(() => {
     if (isSuccess) {
-      loadTransactions() // Reload data after successful vote
-      setSelectedTxIds([])
-      setError(null)
-      alert('Vote berhasil diberikan!')
+      console.log('✅ Vote transaction successful, reloading data...')
+      setTimeout(() => {
+        loadTransactions() // Reload from contract
+        setSelectedTxIds([])
+        setError(null)
+        alert('Vote berhasil diberikan!')
+      }, 2000) // Wait 2 seconds for blockchain to update
     }
   }, [isSuccess])
 
@@ -351,12 +406,12 @@ export default function VoteOnTransaction({ contractAddress, transactionCount, i
     return (
       <div className="text-center py-8">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-500 mx-auto mb-4"></div>
-        <p className="text-gray-300">Loading transactions...</p>
+        <p className="text-gray-300">Loading transactions from blockchain...</p>
       </div>
     )
   }
 
-  if (transactionCount === 0) {
+  if (!actualTransactionCount || Number(actualTransactionCount) === 0) {
     return (
       <div className="text-center py-8">
         <DocumentTextIcon className="h-16 w-16 text-gray-500 mx-auto mb-4" />
@@ -378,7 +433,7 @@ export default function VoteOnTransaction({ contractAddress, transactionCount, i
           Vote on Transactions
         </h2>
         <p className="text-gray-300">
-          Review and vote on pending transaction proposals
+          Review and vote on pending transaction proposals (Total: {Number(actualTransactionCount)})
         </p>
       </div>
 
@@ -396,9 +451,21 @@ export default function VoteOnTransaction({ contractAddress, transactionCount, i
         </div>
       )}
 
+      {/* Debug Info */}
+      <div className="bg-blue-500/20 border border-blue-500 rounded-lg p-4 text-sm">
+        <h4 className="text-blue-400 font-medium mb-2">Debug Info:</h4>
+        <div className="text-blue-300 space-y-1">
+          <div>Contract: {contractAddress}</div>
+          <div>Transaction Count: {Number(actualTransactionCount || 0)}</div>
+          <div>Connected Address: {address}</div>
+          <div>Is Signer: {isSigner ? 'Yes' : 'No'}</div>
+          <div>Loaded Transactions: {transactions.length}</div>
+          <div>Required Signatures: {Number(requiredSignatures || 0)}</div>
+        </div>
+      </div>
+
       {/* Controls */}
       <div className="bg-white/10 rounded-lg p-4 space-y-4">
-        {/* Filter & Mode Toggle */}
         <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
           {/* Filter */}
           <div className="flex items-center space-x-2">
@@ -413,77 +480,65 @@ export default function VoteOnTransaction({ contractAddress, transactionCount, i
                     : 'bg-white/10 text-gray-300 hover:bg-white/20'
                 }`}
               >
-                {filterType}
+                {filterType} ({transactions.filter(tx => {
+                  switch (filterType) {
+                    case 'pending': return !tx.executed && tx.canVote
+                    case 'executable': return !tx.executed && tx.canExecute
+                    case 'expired': return tx.isExpired
+                    default: return true
+                  }
+                }).length})
               </button>
             ))}
           </div>
 
-          {/* Mode Toggle */}
-          <div className="flex items-center space-x-2">
-            <button
-              onClick={() => setBatchVoteMode(!batchVoteMode)}
-              className={`px-4 py-2 rounded-lg transition-colors ${
-                batchVoteMode
-                  ? 'bg-green-600 text-white'
-                  : 'bg-white/10 text-gray-300 hover:bg-white/20'
-              }`}
-            >
-              {batchVoteMode ? 'Batch Mode ON' : 'Single Vote Mode'}
-            </button>
-          </div>
+          {/* Refresh Button */}
+          <button
+            onClick={loadTransactions}
+            disabled={loading}
+            className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition-colors disabled:opacity-50"
+          >
+            {loading ? 'Loading...' : 'Refresh Data'}
+          </button>
         </div>
 
         {/* Batch Controls */}
-        {batchVoteMode && (
-          <div className="border-t border-white/20 pt-4">
-            <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
-              <div className="flex items-center space-x-2">
-                <span className="text-white text-sm">
-                  Selected: {selectedTxIds.length} transaction(s)
-                </span>
-                <button
-                  onClick={selectAllFiltered}
-                  className="text-purple-400 hover:text-purple-300 text-sm underline"
-                >
-                  Select All Eligible
-                </button>
-                <button
-                  onClick={clearSelection}
-                  className="text-red-400 hover:text-red-300 text-sm underline"
-                >
-                  Clear
-                </button>
-              </div>
-
-              <div className="flex items-center space-x-2">
-                <button
-                  onClick={() => handleBatchVote(true)}
-                  disabled={selectedTxIds.length === 0 || isBatchVoteLoading || isWaitingForTx}
-                  className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center"
-                >
-                  {(isBatchVoteLoading || isWaitingForTx) ? (
-                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-1"></div>
-                  ) : (
-                    <HandThumbUpIcon className="h-4 w-4 mr-1" />
-                  )}
-                  Batch YES
-                </button>
-                <button
-                  onClick={() => handleBatchVote(false)}
-                  disabled={selectedTxIds.length === 0 || isBatchVoteLoading || isWaitingForTx}
-                  className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center"
-                >
-                  {(isBatchVoteLoading || isWaitingForTx) ? (
-                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-1"></div>
-                  ) : (
-                    <HandThumbDownIcon className="h-4 w-4 mr-1" />
-                  )}
-                  Batch NO
-                </button>
-              </div>
-            </div>
+        <div className="flex items-center justify-between">
+          <div className="flex items-center space-x-2">
+            <input
+              type="checkbox"
+              id="batchMode"
+              checked={batchVoteMode}
+              onChange={(e) => setBatchVoteMode(e.target.checked)}
+              className="w-4 h-4 text-purple-600 rounded focus:ring-purple-500"
+            />
+            <label htmlFor="batchMode" className="text-white text-sm">
+              Batch Vote Mode
+            </label>
           </div>
-        )}
+
+          {batchVoteMode && (
+            <div className="flex items-center space-x-2">
+              <span className="text-white text-sm">
+                Selected: {selectedTxIds.length}
+              </span>
+              <button
+                onClick={() => handleBatchVote(true)}
+                disabled={selectedTxIds.length === 0 || isBatchVoteLoading || isWaitingForTx}
+                className="bg-green-600 hover:bg-green-700 text-white px-3 py-1 rounded text-sm disabled:opacity-50"
+              >
+                Batch YES
+              </button>
+              <button
+                onClick={() => handleBatchVote(false)}
+                disabled={selectedTxIds.length === 0 || isBatchVoteLoading || isWaitingForTx}
+                className="bg-red-600 hover:bg-red-700 text-white px-3 py-1 rounded text-sm disabled:opacity-50"
+              >
+                Batch NO
+              </button>
+            </div>
+          )}
+        </div>
       </div>
 
       {/* Transaction List */}
@@ -527,7 +582,7 @@ export default function VoteOnTransaction({ contractAddress, transactionCount, i
 
                 <div className="text-right">
                   <div className="text-white font-semibold">
-                    {tx.value} ETH
+                    {parseFloat(formatEther(BigInt(tx.value))).toFixed(4)} ETH
                   </div>
                   <div className="text-gray-400 text-sm">
                     To: {tx.to.slice(0, 8)}...
@@ -552,7 +607,7 @@ export default function VoteOnTransaction({ contractAddress, transactionCount, i
                       <span className="text-white font-medium">{tx.noVotes}</span>
                     </div>
                     <div className="text-gray-400 text-sm">
-                      / {requiredSignatures || 2} required
+                      / {Number(requiredSignatures || 2)} required
                     </div>
                   </div>
                   
@@ -561,7 +616,7 @@ export default function VoteOnTransaction({ contractAddress, transactionCount, i
                     <div 
                       className="bg-green-500 h-2 rounded-full transition-all"
                       style={{ 
-                        width: `${Math.min(100, (Number(tx.yesVotes) / Number(requiredSignatures || 2)) * 100)}%` 
+                        width: `${Math.min(100, (tx.yesVotes / Number(requiredSignatures || 2)) * 100)}%` 
                       }}
                     ></div>
                   </div>

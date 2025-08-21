@@ -4,14 +4,14 @@ import { run } from "hardhat";
 async function main() {
   // Verify GasOptimizer
   await run("verify:verify", {
-    address: "0xEd85aC04944CAC0bBB8488658Bb32264814FDb34",
+    address: "0xB3aE9e5d6409Dd4C41370dcB5290f303cE312588",
     contract: "contracts/GasOptimizer.sol:GasOptimizer",
     constructorArguments: [],
   });
 
   // Verify DAOMultiSigWallet
   await run("verify:verify", {
-    address: "0xffB3fB252fb7D97a467Cbc85a977581044bdB0a1",
+    address: "0x785003257d808B76702c5072AAAd6Bd432D64a23",
     contract: "contracts/DAOMultiSigWallet.sol:DAOMultiSigWallet",
     constructorArguments: [
       [
